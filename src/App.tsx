@@ -1,6 +1,7 @@
-import React, { CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 import Lenis from 'lenis';
+import { TextMorph } from 'torph/react';
 
 const asset = (name: string) => `${import.meta.env.BASE_URL}assets/${name}`;
 const caseTitle = 'Переосмысление опыта накопления в Т-Банке';
@@ -22,6 +23,18 @@ function useSmoothScroll(blocked = false, wrapper?: React.RefObject<HTMLDivEleme
 
 function Icon({ name, size = 16 }: { name: string; size?: number }) {
   return <img className="icon" src={asset(`${name}.svg`)} width={size} height={size} alt="" draggable="false" />;
+}
+
+function MicroMorph({ children }: { children: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!children || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    ref.current?.animate([
+      { filter: 'blur(5px)', opacity: 0 },
+      { filter: 'blur(0)', opacity: 1 },
+    ], { duration: 180, easing: 'cubic-bezier(.23,1,.32,1)' });
+  }, [children]);
+  return <span className="micro-morph" ref={ref}><TextMorph duration={180} ease="cubic-bezier(.23,1,.32,1)" scale={false}>{children}</TextMorph></span>;
 }
 
 function Cover() {
@@ -55,6 +68,7 @@ function CaseVisual({ kind }: { kind: VisualKind }) {
 function ContactContent() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(false);
+  const [hovered, setHovered] = useState<'email' | 'telegram' | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
   async function copyEmail() {
@@ -68,8 +82,8 @@ function ContactContent() {
     <div className="contact-heading"><Dialog.Title>Contact</Dialog.Title><Dialog.Close className="contact-close" aria-label="Закрыть"><Icon name="close" size={20} /></Dialog.Close></div>
     <Dialog.Description className="sr-only">Контакты</Dialog.Description>
     <div className="contact-links">
-      <button className={`contact-row${copied ? ' is-copied' : ''}`} onClick={copyEmail} aria-label="Email"><Icon name="email" /><span className="contact-label"><span>Email</span><span>v@frlvv.ru</span></span><span className="contact-action" aria-live="polite">{copied ? '🎉 copied' : 'copy'}</span></button>
-      <a className="contact-row" href="https://t.me/vf433" target="_blank" rel="noreferrer" aria-label="Telegram"><Icon name="telegram" /><span className="contact-label"><span>Telegram</span><span>vf433</span></span><span className="contact-action">go</span></a>
+      <button className={`contact-row${copied ? ' is-copied' : ''}`} onClick={copyEmail} onMouseEnter={() => setHovered('email')} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered('email')} onBlur={() => setHovered(null)} aria-label="Email"><Icon name="email" /><span className="contact-label"><span>Email</span><span>v@frlvv.ru</span></span><span className="contact-action" aria-live="polite"><MicroMorph>{copied ? '🎉 copied' : hovered === 'email' ? 'copy' : ''}</MicroMorph></span></button>
+      <a className="contact-row" href="https://t.me/vf433" target="_blank" rel="noreferrer" onMouseEnter={() => setHovered('telegram')} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered('telegram')} onBlur={() => setHovered(null)} aria-label="Telegram"><Icon name="telegram" /><span className="contact-label"><span>Telegram</span><span>vf433</span></span><span className="contact-action"><MicroMorph>{hovered === 'telegram' ? 'go' : ''}</MicroMorph></span></a>
     </div>
     {error && <p className="copy-error" role="status">Не удалось скопировать. <a href="mailto:v@frlvv.ru">v@frlvv.ru</a></p>}
   </>;
@@ -150,10 +164,12 @@ function CaseContent() {
   </article>;
 }
 
+type SheetDrag = { source: 'touch' | 'pointer'; id: number; x: number; y: number; lastY: number; lastTime: number; velocity: number; committed: boolean };
+
 function CaseViewport({ onClose }: { onClose: () => void }) {
-  const wrapper = useRef<HTMLDivElement>(null), content = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: number; y: number; time: number } | null>(null);
-  const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [showTop, setShowTop] = useState(false);
+  const wrapper = useRef<HTMLDivElement>(null), content = useRef<HTMLDivElement>(null), popup = useRef<HTMLDivElement>(null);
+  const drag = useRef<SheetDrag | null>(null);
+  const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [swipeClosing, setSwipeClosing] = useState(false), [showTop, setShowTop] = useState(false);
   useSmoothScroll(false, wrapper, content);
   useLayoutEffect(() => {
     if (!wrapper.current) return;
@@ -167,13 +183,72 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     }, 120);
     return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); };
   }, []);
-  function release(clientY: number) {
-    if (!drag.current) return;
-    const distance = Math.max(0, clientY - drag.current.y), velocity = distance / Math.max(1, performance.now() - drag.current.time);
+  const release = useCallback((clientY: number, cancelled = false) => {
+    const gesture = drag.current;
+    if (!gesture) return;
+    const distance = Math.max(0, clientY - gesture.y);
+    const projectedDistance = distance + Math.max(0, gesture.velocity) * 180;
     drag.current = null;
     setDragging(false);
-    if (distance > 72 || velocity > 0.45) onClose(); else setDragY(0);
-  }
+    const shouldClose = !cancelled && gesture.committed && (distance > Math.min(140, innerHeight * .2) || projectedDistance > innerHeight * .28);
+    if (shouldClose) {
+      setDragY(distance);
+      setSwipeClosing(true);
+      requestAnimationFrame(onClose);
+    } else {
+      setDragY(0);
+    }
+  }, [onClose]);
+  useEffect(() => {
+    const element = popup.current;
+    if (!element) return;
+    const touchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1 || (wrapper.current?.scrollTop ?? 0) > 1) return;
+      const touch = event.touches[0];
+      drag.current = { source: 'touch', id: touch.identifier, x: touch.clientX, y: touch.clientY, lastY: touch.clientY, lastTime: event.timeStamp, velocity: 0, committed: false };
+    };
+    const touchMove = (event: TouchEvent) => {
+      const gesture = drag.current;
+      if (!gesture || gesture.source !== 'touch' || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      if (touch.identifier !== gesture.id) return;
+      const dx = touch.clientX - gesture.x, dy = touch.clientY - gesture.y;
+      if (!gesture.committed) {
+        if (dy > 8 && Math.abs(dy) > Math.abs(dx)) {
+          gesture.committed = true;
+          setDragging(true);
+        } else if (dy < -8 || Math.abs(dx) > Math.abs(dy) + 8) {
+          drag.current = null;
+          return;
+        } else {
+          return;
+        }
+      }
+      event.preventDefault();
+      const elapsed = Math.max(1, event.timeStamp - gesture.lastTime);
+      gesture.velocity = (touch.clientY - gesture.lastY) / elapsed;
+      gesture.lastY = touch.clientY;
+      gesture.lastTime = event.timeStamp;
+      setDragY(Math.max(0, dy));
+    };
+    const touchEnd = (event: TouchEvent) => {
+      const gesture = drag.current;
+      if (!gesture || gesture.source !== 'touch') return;
+      const touch = Array.from(event.changedTouches).find(item => item.identifier === gesture.id);
+      if (touch) release(touch.clientY);
+    };
+    const touchCancel = () => release(drag.current?.lastY ?? 0, true);
+    element.addEventListener('touchstart', touchStart, { passive: true });
+    element.addEventListener('touchmove', touchMove, { passive: false });
+    element.addEventListener('touchend', touchEnd, { passive: true });
+    element.addEventListener('touchcancel', touchCancel, { passive: true });
+    return () => {
+      element.removeEventListener('touchstart', touchStart);
+      element.removeEventListener('touchmove', touchMove);
+      element.removeEventListener('touchend', touchEnd);
+      element.removeEventListener('touchcancel', touchCancel);
+    };
+  }, [release]);
   function scrollToTop() {
     const element = wrapper.current;
     if (!element) return;
@@ -187,13 +262,27 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     requestAnimationFrame(step);
   }
   const popupStyle = { '--drag-y': `${dragY}px` } as CSSProperties;
-  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle}>
-    <div className="case-swipe-zone" onPointerDown={event => {
+  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup ref={popup} className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle} data-swipe-close={swipeClosing || undefined} onPointerDown={event => {
+      if (event.pointerType === 'touch') return;
       if (wrapper.current && wrapper.current.scrollTop > 2) return;
-      drag.current = { id: event.pointerId, y: event.clientY, time: performance.now() };
-      setDragging(true);
+      drag.current = { source: 'pointer', id: event.pointerId, x: event.clientX, y: event.clientY, lastY: event.clientY, lastTime: event.timeStamp, velocity: 0, committed: false };
       event.currentTarget.setPointerCapture(event.pointerId);
-    }} onPointerMove={event => { if (drag.current?.id === event.pointerId) setDragY(Math.max(0, event.clientY - drag.current.y)); }} onPointerUp={event => release(event.clientY)} onPointerCancel={() => { drag.current = null; setDragging(false); setDragY(0); }}><span /></div>
+    }} onPointerMove={event => {
+      const gesture = drag.current;
+      if (!gesture || gesture.source !== 'pointer' || gesture.id !== event.pointerId) return;
+      const dx = event.clientX - gesture.x, dy = event.clientY - gesture.y;
+      if (!gesture.committed) {
+        if (dy > 8 && Math.abs(dy) > Math.abs(dx)) { gesture.committed = true; setDragging(true); }
+        else if (dy < -8 || Math.abs(dx) > Math.abs(dy) + 8) { drag.current = null; return; }
+        else return;
+      }
+      const elapsed = Math.max(1, event.timeStamp - gesture.lastTime);
+      gesture.velocity = (event.clientY - gesture.lastY) / elapsed;
+      gesture.lastY = event.clientY;
+      gesture.lastTime = event.timeStamp;
+      setDragY(Math.max(0, dy));
+    }} onPointerUp={event => { if (drag.current?.source === 'pointer') release(event.clientY); }} onPointerCancel={() => { if (drag.current?.source === 'pointer') release(drag.current.lastY, true); }}>
+    <div className="case-swipe-zone"><span /></div>
     <Dialog.Close className="case-close" aria-label="Закрыть"><Icon name="case-close" size={40} /></Dialog.Close><CaseContent />
   </Dialog.Popup><button className={`case-top${showTop ? ' is-visible' : ''}`} onClick={scrollToTop} aria-label="Вверх">↑</button></div></Dialog.Viewport>;
 }
@@ -201,17 +290,11 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
 export default function App() {
   const [contactOpen, setContactOpen] = useState(false), [caseOpen, setCaseOpen] = useState(false);
   useSmoothScroll(contactOpen || caseOpen);
-  useEffect(() => {
-    const mobileSurface = matchMedia('(max-width: 700px)').matches;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', caseOpen || mobileSurface ? '#121212' : '#0c0c0c');
-    document.documentElement.dataset.caseOpen = String(caseOpen);
-    return () => { delete document.documentElement.dataset.caseOpen; };
-  }, [caseOpen]);
   return <><a className="skip-link" href="#work">К работам</a><main className="portfolio-layout" data-case-open={caseOpen}>
     <aside className="profile"><div className="profile-block"><p className="eyebrow">Влад Фролов</p><h1>Продуктовый дизайнер</h1></div><div className="profile-block"><p className="eyebrow">Опыт</p><p>Проектирую понятные цифровые продукты</p></div><div className="profile-actions">
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}Vlad-Frolov-CV.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={setCaseOpen}><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => setCaseOpen(false)} /></Dialog.Portal></Dialog.Root><div className="project-card project-placeholder"><div className="placeholder-cover" /><p className="project-title">{caseTitle}</p></div></section>
+    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={setCaseOpen} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => setCaseOpen(false)} /></Dialog.Portal></Dialog.Root><div className="project-card project-placeholder"><div className="placeholder-cover" /><p className="project-title">{caseTitle}</p></div></section>
   </main></>;
 }
