@@ -13,7 +13,8 @@
     "@fontsource-variable/golos-text": "^5.2.0",
     "lenis": "^1.3.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "torph": "^0.1.3"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
