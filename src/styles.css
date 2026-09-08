@@ -1,4 +1,4 @@
-:root{font-family:'Golos Text Variable',sans-serif;color:#fff;background:#0c0c0c;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;font-weight:400;color-scheme:dark;--ease-out:cubic-bezier(.22,1,.36,1);--ease-in-out:cubic-bezier(.65,0,.35,1)}
+:root{font-family:'Golos Text Variable',sans-serif;color:#fff;background:#121212;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;font-weight:400;color-scheme:dark;--ease-out:cubic-bezier(.22,1,.36,1);--ease-in-out:cubic-bezier(.65,0,.35,1)}
 *{box-sizing:border-box}
 html,body,#root{min-height:100%}
 html{background:#121212}
