@@ -1,7 +1,6 @@
 import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 import Lenis from 'lenis';
-import { TextMorph } from 'torph/react';
 
 const asset = (name: string) => `${import.meta.env.BASE_URL}assets/${name}`;
 const caseTitle = 'Переосмысление опыта накопления в Т-Банке';
@@ -26,15 +25,7 @@ function Icon({ name, size = 16 }: { name: string; size?: number }) {
 }
 
 function MicroMorph({ children }: { children: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    if (!children || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    ref.current?.animate([
-      { filter: 'blur(5px)', opacity: 0 },
-      { filter: 'blur(0)', opacity: 1 },
-    ], { duration: 180, easing: 'cubic-bezier(.23,1,.32,1)' });
-  }, [children]);
-  return <span className="micro-morph" ref={ref}><TextMorph duration={180} ease="cubic-bezier(.23,1,.32,1)" scale={false}>{children}</TextMorph></span>;
+  return <span className="micro-morph" key={children}>{[...children].map((letter, index) => <span className="micro-morph-letter" style={{ '--letter-index': index } as CSSProperties} key={`${children}-${index}`}>{letter === ' ' ? '\u00a0' : letter}</span>)}</span>;
 }
 
 function Cover() {
@@ -79,11 +70,11 @@ function ContactContent() {
     } catch { setError(true); }
   }
   return <>
-    <div className="contact-heading"><Dialog.Title>Contact</Dialog.Title><Dialog.Close className="contact-close" aria-label="Закрыть"><Icon name="close" size={20} /></Dialog.Close></div>
+    <div className="contact-heading"><Dialog.Title>Contact</Dialog.Title><Dialog.Close className="contact-close" aria-label="Закрыть"><Icon name="close" size={24} /></Dialog.Close></div>
     <Dialog.Description className="sr-only">Контакты</Dialog.Description>
     <div className="contact-links">
-      <button className={`contact-row${copied ? ' is-copied' : ''}`} onClick={copyEmail} onMouseEnter={() => setHovered('email')} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered('email')} onBlur={() => setHovered(null)} aria-label="Email"><Icon name="email" /><span className="contact-label"><span>Email</span><span>v@frlvv.ru</span></span><span className="contact-action" aria-live="polite"><MicroMorph>{copied ? '🎉 copied' : hovered === 'email' ? 'copy' : ''}</MicroMorph></span></button>
-      <a className="contact-row" href="https://t.me/vf433" target="_blank" rel="noreferrer" onMouseEnter={() => setHovered('telegram')} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered('telegram')} onBlur={() => setHovered(null)} aria-label="Telegram"><Icon name="telegram" /><span className="contact-label"><span>Telegram</span><span>vf433</span></span><span className="contact-action"><MicroMorph>{hovered === 'telegram' ? 'go' : ''}</MicroMorph></span></a>
+      <button className={`contact-row${copied ? ' is-copied' : ''}`} onClick={copyEmail} onMouseEnter={() => setHovered('email')} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered('email')} onBlur={() => setHovered(null)} aria-label="Email"><Icon name="email" size={20} /><span className="contact-label"><span>Email</span><span>v@frlvv.ru</span></span><span className="contact-action" aria-live="polite"><MicroMorph>{copied ? '🎉 copied' : hovered === 'email' ? 'copy' : ''}</MicroMorph></span></button>
+      <a className="contact-row" href="https://t.me/vf433" target="_blank" rel="noreferrer" onMouseEnter={() => setHovered('telegram')} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered('telegram')} onBlur={() => setHovered(null)} aria-label="Telegram"><Icon name="telegram" size={20} /><span className="contact-label"><span>Telegram</span><span>vf433</span></span><span className="contact-action"><MicroMorph>{hovered === 'telegram' ? 'go' : ''}</MicroMorph></span></a>
     </div>
     {error && <p className="copy-error" role="status">Не удалось скопировать. <a href="mailto:v@frlvv.ru">v@frlvv.ru</a></p>}
   </>;
@@ -290,6 +281,17 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
 export default function App() {
   const [contactOpen, setContactOpen] = useState(false), [caseOpen, setCaseOpen] = useState(false);
   useSmoothScroll(contactOpen || caseOpen);
+  useEffect(() => {
+    const root = document.documentElement;
+    const theme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    let timer: number | undefined;
+    const apply = (open: boolean) => {
+      if (open) root.dataset.caseOpen = 'true'; else delete root.dataset.caseOpen;
+      if (theme) theme.content = open ? '#121212' : '#0c0c0c';
+    };
+    if (caseOpen) apply(true); else timer = window.setTimeout(() => apply(false), 320);
+    return () => { if (timer) window.clearTimeout(timer); };
+  }, [caseOpen]);
   return <><a className="skip-link" href="#work">К работам</a><main className="portfolio-layout" data-case-open={caseOpen}>
     <aside className="profile"><div className="profile-block"><p className="eyebrow">Влад Фролов</p><h1>Продуктовый дизайнер</h1></div><div className="profile-block"><p className="eyebrow">Опыт</p><p>Проектирую понятные цифровые продукты</p></div><div className="profile-actions">
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>

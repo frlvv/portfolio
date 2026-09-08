@@ -3,6 +3,7 @@
 html,body,#root{min-height:100%}
 html{background:#0c0c0c}
 body,#root{background:#0c0c0c}
+html[data-case-open=true],html[data-case-open=true] body,html[data-case-open=true] #root{background:#121212}
 html{scroll-behavior:auto}
 body{margin:0;min-width:280px;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 button,a,input,[tabindex]{-webkit-tap-highlight-color:transparent;outline:none}
@@ -38,16 +39,18 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 .contact-backdrop[data-starting-style],.contact-backdrop[data-ending-style]{opacity:0}
 .contact-popup{position:fixed;z-index:21;top:50%;left:50%;width:300px;max-width:calc(100vw - 32px);padding:16px;border:1px solid #2a2a29;border-radius:20px;background:#121212;transform:translate(-50%,-50%);transition:opacity 180ms var(--ease-out),transform 220ms var(--ease-out)}
 .contact-popup[data-starting-style],.contact-popup[data-ending-style]{opacity:0;transform:translate(-50%,-50%) scale(.96)}
-.contact-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;height:20px}
-.contact-heading h2{font-size:14px;line-height:17px;font-weight:500;letter-spacing:-.28px}
+.contact-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;height:24px}
+.contact-heading h2{font-size:16px;line-height:19px;font-weight:400;letter-spacing:-.32px}
 .icon{display:block;flex-shrink:0;object-fit:contain;pointer-events:none;-webkit-user-select:none;user-select:none}
-.contact-close{width:32px;height:32px;display:grid;place-items:center;margin-right:-6px;border-radius:50%;transition:transform 170ms var(--ease-out),opacity 150ms ease}
-.contact-row{position:relative;width:100%;height:59px;padding:12px;display:flex;gap:12px;align-items:center;border-radius:14px;font-size:12px;line-height:15px;letter-spacing:-.24px;background:transparent;transition:background-color 150ms ease,transform 170ms var(--ease-out)}
+.contact-close{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;transition:transform 170ms var(--ease-out),opacity 150ms ease}
+.contact-row{position:relative;width:100%;min-height:63px;padding:12px;display:flex;gap:12px;align-items:center;border-radius:14px;font-size:14px;line-height:17px;letter-spacing:-.28px;background:transparent;transition:background-color 150ms ease,transform 170ms var(--ease-out)}
 .contact-label{display:flex;flex-direction:column;gap:5px}
 .contact-label>span:first-child{color:#a0a0a0}
-.contact-action{margin-left:auto;font-size:12px;line-height:14px;color:#a9a9a9;white-space:nowrap;opacity:0;transform:translateX(4px);transition:opacity 140ms ease,transform 170ms var(--ease-out)}
-.micro-morph{display:inline-block;min-height:14px;will-change:filter,opacity}
-.contact-row.is-copied{background:rgba(255,255,255,.08)}
+.contact-action{margin-left:auto;font-size:14px;line-height:17px;color:rgba(255,255,255,.6);white-space:nowrap;opacity:0;transform:translateX(4px);transition:opacity 120ms ease,transform 170ms var(--ease-out)}
+.micro-morph{display:inline-flex;min-height:17px}
+.micro-morph-letter{display:inline-block;animation:contact-letter-in 360ms var(--ease-out) both;animation-delay:calc(var(--letter-index) * 32ms);will-change:filter,opacity,transform}
+@keyframes contact-letter-in{0%{opacity:0;filter:blur(7px);transform:translateY(4px) scale(.94)}45%{opacity:.72;filter:blur(2.5px)}100%{opacity:1;filter:blur(0);transform:none}}
+.contact-row.is-copied{background:rgba(255,255,255,.04)}
 .contact-row.is-copied .contact-action{opacity:1;transform:none}
 .copy-error{font-size:12px;line-height:1.4;margin-top:12px;color:#c9c9c9}
 .copy-error a{text-decoration:underline}
@@ -131,7 +134,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
   .contact-button:hover,.cv-button:hover,.project-card:hover,.contact-row:hover,.slider-controls>button:hover,.case-top:hover{transform:scale(.985)}
   .contact-button:hover{background:#e7e7e7}.cv-button:hover{background:#3b3b3b}
   .project-card:hover .project-title{color:#b7b7b7}
-  .contact-row:hover{background:rgba(255,255,255,.08)}
+  .contact-row:hover{background:rgba(255,255,255,.04)}
   .contact-row:hover .contact-action{opacity:1;transform:none}
   .contact-close:hover,.case-close:hover{transform:scale(.94);background-color:rgba(18,18,18,.82)}
   .slider-controls>button:hover{background:#272727;color:#fff}
@@ -149,8 +152,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
   .projects{width:100%;gap:32px}.cover,.placeholder-cover{border-radius:20px}.project-title{font-size:16px;line-height:21px;letter-spacing:-.32px}.project-card{gap:12px}
   .case-backdrop{background:rgba(12,12,12,.7)}
   .case-viewport{background:transparent;overscroll-behavior-y:none}
-  .case-scroll-content{padding:0;min-height:100dvh}
-  .case-popup{width:100%;min-height:100dvh;padding:calc(32px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));border-radius:24px 24px 0 0;transition:opacity 220ms ease,transform 280ms var(--ease-drawer);touch-action:pan-y;will-change:transform,opacity}
+  .case-scroll-content{padding:0;min-height:100dvh;min-height:100lvh}
+  .case-popup{width:100%;min-height:100dvh;min-height:100lvh;padding:calc(32px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));border-radius:24px 24px 0 0;transition:opacity 220ms ease,transform 280ms var(--ease-drawer);touch-action:pan-y;will-change:transform,opacity}
   .case-popup[data-starting-style]{transform:translateY(calc(var(--drag-y,0px) + 20px)) scale(.985);opacity:0}
   .case-popup[data-ending-style]{transform:translateY(calc(var(--drag-y,0px) + 14px)) scale(.99);opacity:0;transition-duration:180ms}
   .case-popup[data-swipe-close=true][data-ending-style]{transform:translateY(100dvh);opacity:1;transition-duration:260ms;transition-timing-function:var(--ease-drawer)}
