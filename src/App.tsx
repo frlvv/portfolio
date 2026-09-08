@@ -11,7 +11,7 @@ function useSmoothScroll(blocked = false, wrapper?: React.RefObject<HTMLDivEleme
     let lenis: Lenis | undefined;
     const setup = () => {
       lenis?.destroy();
-      if (preference.matches || blocked || (wrapper && !wrapper.current)) return;
+      if (preference.matches || blocked || (wrapper && !wrapper.current) || (wrapper && matchMedia('(max-width:700px)').matches)) return;
       lenis = new Lenis({ wrapper: wrapper?.current ?? window, content: content?.current ?? document.documentElement, autoRaf: true, smoothWheel: true, syncTouch: false, lerp: 0.2, overscroll: false });
     };
     setup();
@@ -163,16 +163,16 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
   const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [swipeClosing, setSwipeClosing] = useState(false), [showTop, setShowTop] = useState(false);
   useSmoothScroll(false, wrapper, content);
   useLayoutEffect(() => {
-    if (!wrapper.current) return;
-    wrapper.current.scrollTop = 0;
-    const frame = requestAnimationFrame(() => {
-      if (wrapper.current) wrapper.current.scrollTop = 0;
-    });
-    const timer = window.setTimeout(() => {
-      if (wrapper.current) wrapper.current.scrollTop = 0;
-      setShowTop(false);
-    }, 120);
-    return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); };
+    if (matchMedia('(max-width:700px)').matches) window.scrollTo(0, 0);
+    else if (wrapper.current) wrapper.current.scrollTop = 0;
+    setShowTop(false);
+  }, []);
+  useEffect(() => {
+    const onWindowScroll = () => {
+      if (matchMedia('(max-width:700px)').matches) setShowTop(window.scrollY > 480);
+    };
+    window.addEventListener('scroll', onWindowScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onWindowScroll);
   }, []);
   const release = useCallback((clientY: number, cancelled = false) => {
     const gesture = drag.current;
@@ -194,7 +194,9 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     const element = popup.current;
     if (!element) return;
     const touchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1 || (wrapper.current?.scrollTop ?? 0) > 1) return;
+      if ((event.target as HTMLElement).closest('button,a') || event.touches.length !== 1) return;
+      const scrollTop = matchMedia('(max-width:700px)').matches ? window.scrollY : (wrapper.current?.scrollTop ?? 0);
+      if (scrollTop > 1) return;
       const touch = event.touches[0];
       drag.current = { source: 'touch', id: touch.identifier, x: touch.clientX, y: touch.clientY, lastY: touch.clientY, lastTime: event.timeStamp, velocity: 0, committed: false };
     };
@@ -241,13 +243,16 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     };
   }, [release]);
   function scrollToTop() {
+    const mobile = matchMedia('(max-width:700px)').matches;
     const element = wrapper.current;
-    if (!element) return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { element.scrollTop = 0; return; }
-    const start = element.scrollTop, startedAt = performance.now(), duration = 520;
+    if (!mobile && !element) return;
+    const getTop = () => mobile ? window.scrollY : element!.scrollTop;
+    const setTop = (value: number) => { if (mobile) window.scrollTo(0, value); else element!.scrollTop = value; };
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setTop(0); return; }
+    const start = getTop(), startedAt = performance.now(), duration = 420;
     const step = (now: number) => {
       const progress = Math.min(1, (now - startedAt) / duration);
-      element.scrollTop = start * Math.pow(1 - progress, 4);
+      setTop(start * Math.pow(1 - progress, 4));
       if (progress < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -255,7 +260,9 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
   const popupStyle = { '--drag-y': `${dragY}px` } as CSSProperties;
   return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup ref={popup} className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle} data-swipe-close={swipeClosing || undefined} onPointerDown={event => {
       if (event.pointerType === 'touch') return;
-      if (wrapper.current && wrapper.current.scrollTop > 2) return;
+      if ((event.target as HTMLElement).closest('button,a')) return;
+      const scrollTop = matchMedia('(max-width:700px)').matches ? window.scrollY : (wrapper.current?.scrollTop ?? 0);
+      if (scrollTop > 2) return;
       drag.current = { source: 'pointer', id: event.pointerId, x: event.clientX, y: event.clientY, lastY: event.clientY, lastTime: event.timeStamp, velocity: 0, committed: false };
       event.currentTarget.setPointerCapture(event.pointerId);
     }} onPointerMove={event => {
@@ -274,13 +281,21 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
       setDragY(Math.max(0, dy));
     }} onPointerUp={event => { if (drag.current?.source === 'pointer') release(event.clientY); }} onPointerCancel={() => { if (drag.current?.source === 'pointer') release(drag.current.lastY, true); }}>
     <div className="case-swipe-zone"><span /></div>
-    <Dialog.Close className="case-close" aria-label="Закрыть"><Icon name="case-close" size={40} /></Dialog.Close><CaseContent />
+    <Dialog.Close className="case-close" aria-label="Закрыть" onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); onClose(); }}><Icon name="case-close" size={40} /></Dialog.Close><CaseContent />
   </Dialog.Popup><button className={`case-top${showTop ? ' is-visible' : ''}`} onClick={scrollToTop} aria-label="Вверх">↑</button></div></Dialog.Viewport>;
 }
 
 export default function App() {
   const [contactOpen, setContactOpen] = useState(false), [caseOpen, setCaseOpen] = useState(false);
+  const pageScroll = useRef(0);
   useSmoothScroll(contactOpen || caseOpen);
+  useEffect(() => {
+    for (const file of ['case-bg.png', 'hero-hub.png', 'hero-goal.png']) {
+      const image = new Image();
+      image.src = asset(file);
+      image.decode?.().catch(() => undefined);
+    }
+  }, []);
   useEffect(() => {
     const root = document.documentElement;
     const theme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
@@ -289,7 +304,18 @@ export default function App() {
       if (open) root.dataset.caseOpen = 'true'; else delete root.dataset.caseOpen;
       if (theme) theme.content = open ? '#121212' : '#0c0c0c';
     };
-    if (caseOpen) apply(true); else timer = window.setTimeout(() => apply(false), 320);
+    if (caseOpen) {
+      pageScroll.current = window.scrollY;
+      root.style.setProperty('--page-scroll', `${pageScroll.current}px`);
+      apply(true);
+      window.scrollTo(0, 0);
+    } else if (root.dataset.caseOpen) {
+      timer = window.setTimeout(() => {
+        apply(false);
+        root.style.removeProperty('--page-scroll');
+        window.scrollTo(0, pageScroll.current);
+      }, 280);
+    }
     return () => { if (timer) window.clearTimeout(timer); };
   }, [caseOpen]);
   return <><a className="skip-link" href="#work">К работам</a><main className="portfolio-layout" data-case-open={caseOpen}>
