@@ -77,7 +77,7 @@ function ContactContent() {
 
 function ImageSlider() {
   const [active, setActive] = useState(0);
-  const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
+  const pointer = useRef<{ id: number; x: number; y: number; target: number | null } | null>(null);
   const suppressClick = useRef(false);
   const items = [{ file: 'current-home.png', alt: 'Главная Т-Банка со счетами' }, { file: 'current-account.png', alt: 'Экран накопительного счёта' }];
   const change = (index: number) => setActive((index + items.length) % items.length);
@@ -86,16 +86,37 @@ function ImageSlider() {
       if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); change(active + (event.key === 'ArrowRight' ? 1 : -1)); }
     }} onPointerDown={event => {
       if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
-      pointer.current = { id: event.pointerId, x: event.clientX, y: event.clientY }; suppressClick.current = false; event.currentTarget.setPointerCapture(event.pointerId);
+      const slide = (event.target as HTMLElement).closest<HTMLButtonElement>('.stack-slide');
+      pointer.current = { id: event.pointerId, x: event.clientX, y: event.clientY, target: slide ? Number(slide.dataset.index) : null };
+      suppressClick.current = false;
+      event.currentTarget.setPointerCapture(event.pointerId);
     }} onPointerUp={event => {
       const start = pointer.current; if (!start || start.id !== event.pointerId) return;
       const dx = event.clientX - start.x, dy = event.clientY - start.y;
-      if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) { change(active + (dx < 0 ? 1 : -1)); suppressClick.current = true; }
+      if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) {
+        change(active + (dx < 0 ? 1 : -1));
+        suppressClick.current = true;
+      } else {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const x = (event.clientX - bounds.left) / bounds.width;
+        const pressedBackPhoto = (active === 0 && x > 0.82) || (active === 1 && x < 0.18);
+        if (pressedBackPhoto) {
+          change(active + 1);
+          suppressClick.current = true;
+        } else if (start.target !== null && start.target !== active) {
+          change(start.target);
+          suppressClick.current = true;
+        }
+      }
       pointer.current = null;
     }} onPointerCancel={() => { pointer.current = null; }}>
-      {items.map((item, index) => <button key={item.file} className={`stack-slide ${index === active ? 'is-front' : 'is-back'} ${index === 0 ? 'stack-home' : 'stack-account'}`} onClick={() => {
+      {items.map((item, index) => <button key={item.file} data-index={index} className={`stack-slide ${index === active ? 'is-front' : 'is-back'} ${index === 0 ? 'stack-home' : 'stack-account'}`} onClick={() => {
         if (suppressClick.current) { suppressClick.current = false; return; } change(index);
       }} aria-label={item.alt} aria-current={index === active ? 'true' : undefined}><img src={asset(item.file)} alt="" draggable="false" loading="lazy" /></button>)}
+      <button className={`back-photo-hit back-photo-hit-${active}`} onClick={() => {
+        if (suppressClick.current) { suppressClick.current = false; return; }
+        change(active + 1);
+      }} aria-label="Заднее фото" />
     </div>
     <div className="slider-controls"><button onClick={() => change(active - 1)} aria-label="Предыдущая">←</button><div className="slider-dots">{items.map((item, index) => <button key={item.file} className={active === index ? 'is-active' : ''} onClick={() => change(index)} aria-label={`${index + 1}`} aria-pressed={active === index}><span /></button>)}</div><button onClick={() => change(active + 1)} aria-label="Следующая">→</button></div>
   </div>;
@@ -132,7 +153,7 @@ function CaseContent() {
 function CaseViewport({ onClose }: { onClose: () => void }) {
   const wrapper = useRef<HTMLDivElement>(null), content = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: number; y: number; time: number } | null>(null);
-  const [dragY, setDragY] = useState(0), [showTop, setShowTop] = useState(false);
+  const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [showTop, setShowTop] = useState(false);
   useSmoothScroll(false, wrapper, content);
   useLayoutEffect(() => {
     if (!wrapper.current) return;
@@ -150,7 +171,8 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     if (!drag.current) return;
     const distance = Math.max(0, clientY - drag.current.y), velocity = distance / Math.max(1, performance.now() - drag.current.time);
     drag.current = null;
-    if (distance > 96 || velocity > 0.65) onClose(); else setDragY(0);
+    setDragging(false);
+    if (distance > 72 || velocity > 0.45) onClose(); else setDragY(0);
   }
   function scrollToTop() {
     const element = wrapper.current;
@@ -165,11 +187,13 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     requestAnimationFrame(step);
   }
   const popupStyle = { '--drag-y': `${dragY}px` } as CSSProperties;
-  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup className="case-popup" style={popupStyle}>
+  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle}>
     <div className="case-swipe-zone" onPointerDown={event => {
       if (wrapper.current && wrapper.current.scrollTop > 2) return;
-      drag.current = { id: event.pointerId, y: event.clientY, time: performance.now() }; event.currentTarget.setPointerCapture(event.pointerId);
-    }} onPointerMove={event => { if (drag.current?.id === event.pointerId) setDragY(Math.max(0, event.clientY - drag.current.y)); }} onPointerUp={event => release(event.clientY)} onPointerCancel={() => { drag.current = null; setDragY(0); }}><span /></div>
+      drag.current = { id: event.pointerId, y: event.clientY, time: performance.now() };
+      setDragging(true);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }} onPointerMove={event => { if (drag.current?.id === event.pointerId) setDragY(Math.max(0, event.clientY - drag.current.y)); }} onPointerUp={event => release(event.clientY)} onPointerCancel={() => { drag.current = null; setDragging(false); setDragY(0); }}><span /></div>
     <Dialog.Close className="case-close" aria-label="Закрыть"><Icon name="case-close" size={40} /></Dialog.Close><CaseContent />
   </Dialog.Popup><button className={`case-top${showTop ? ' is-visible' : ''}`} onClick={scrollToTop} aria-label="Вверх">↑</button></div></Dialog.Viewport>;
 }
@@ -178,7 +202,8 @@ export default function App() {
   const [contactOpen, setContactOpen] = useState(false), [caseOpen, setCaseOpen] = useState(false);
   useSmoothScroll(contactOpen || caseOpen);
   useEffect(() => {
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', caseOpen ? '#121212' : '#0c0c0c');
+    const mobileSurface = matchMedia('(max-width: 700px)').matches;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', caseOpen || mobileSurface ? '#121212' : '#0c0c0c');
     document.documentElement.dataset.caseOpen = String(caseOpen);
     return () => { delete document.documentElement.dataset.caseOpen; };
   }, [caseOpen]);
