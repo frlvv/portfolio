@@ -1,6 +1,7 @@
 import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 import Lenis from 'lenis';
+import { TextMorph } from 'torph/react';
 
 const asset = (name: string) => `${import.meta.env.BASE_URL}assets/${name}`;
 const caseTitle = 'Переосмысление опыта накопления в Т-Банке';
@@ -26,6 +27,25 @@ function Icon({ name, size = 16 }: { name: string; size?: number }) {
 
 function MicroMorph({ children }: { children: string }) {
   return <span className="micro-morph" key={children}>{[...children].map((letter, index) => <span className="micro-morph-letter" style={{ '--letter-index': index } as CSSProperties} key={`${children}-${index}`}>{letter === ' ' ? '\u00a0' : letter}</span>)}</span>;
+}
+
+function PendingProjectCard() {
+  const [active, setActive] = useState(false);
+  return <button className="project-card project-pending" onMouseEnter={() => setActive(true)} onMouseLeave={() => setActive(false)} onFocus={() => setActive(true)} onBlur={() => setActive(false)} onClick={event => {
+    const card = event.currentTarget;
+    card.classList.remove('is-denied');
+    void card.offsetWidth;
+    card.classList.add('is-denied');
+  }} onAnimationEnd={event => event.currentTarget.classList.remove('is-denied')}>
+    <span className={`pending-visual${active ? ' is-active' : ''}`}>
+      <img className="pending-cover" src={asset('capsule-case-hq.png')} alt="" draggable="false" />
+      <span className="pending-status" aria-hidden="true">
+        <img className="pending-lock" src={asset('lock.svg')} alt="" draggable="false" />
+        <span className="pending-status-text">{[...'Кейс в разработке'].map((letter, index) => <TextMorph className="pending-letter" duration={240} ease="cubic-bezier(0.23, 1, 0.32, 1)" locale="ru" numbers={false} scale={false} key={`${letter}-${index}`}>{active ? letter : ''}</TextMorph>)}</span>
+      </span>
+    </span>
+    <span className="project-title">Капсула для отправки сообщения себе в будущее</span>
+  </button>;
 }
 
 function Cover() {
@@ -319,10 +339,10 @@ export default function App() {
     return () => { if (timer) window.clearTimeout(timer); };
   }, [caseOpen]);
   return <><a className="skip-link" href="#work">К работам</a><main className="portfolio-layout" data-case-open={caseOpen}>
-    <aside className="profile"><div className="profile-block"><p className="eyebrow">Влад Фролов</p><h1>Продуктовый дизайнер</h1></div><div className="profile-block"><p className="eyebrow">Скиллы</p><p>Проектирую понятные цифровые продукты</p></div><div className="profile-actions">
+    <aside className="profile"><div className="profile-block"><p className="eyebrow">Влад Фролов</p><h1>Продуктовый дизайнер</h1></div><div className="profile-block"><p className="eyebrow">Скиллы</p><p>research, user flows, wireframing, prototyping, usability testing, design systems, edge cases, animation, lottie, handoff, design review</p></div><div className="profile-actions">
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}Vlad-Frolov-CV.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={setCaseOpen} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => setCaseOpen(false)} /></Dialog.Portal></Dialog.Root><button className="project-card project-pending" onClick={event => { const card = event.currentTarget; card.classList.remove('is-denied'); void card.offsetWidth; card.classList.add('is-denied'); }} onAnimationEnd={event => event.currentTarget.classList.remove('is-denied')}><img className="pending-cover" src={asset('capsule-case.png')} alt="" draggable="false" /><span className="project-title">Капсула для отправки сообщения себе в будущее</span></button></section>
+    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={setCaseOpen} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => setCaseOpen(false)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
   </main></>;
 }
