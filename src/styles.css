@@ -35,6 +35,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 .cover-phone-first{left:-27.5%;top:13.22913%}
 .cover-phone-second{left:8.4766%;top:5.9375%}
 .placeholder-cover{width:100%;aspect-ratio:1;border-radius:25px;background:#d9d9d9}
+.project-pending{cursor:default}
+.pending-cover{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:24px;pointer-events:none;-webkit-user-select:none;user-select:none}
+.project-pending.is-denied{animation:project-denied 440ms var(--ease-out)}
+@keyframes project-denied{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}42%{transform:translateX(6px)}64%{transform:translateX(-4px)}82%{transform:translateX(2px)}}
 .contact-backdrop{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);transition:opacity 220ms var(--ease-out)}
 .contact-backdrop[data-starting-style],.contact-backdrop[data-ending-style]{opacity:0}
 .contact-popup{position:fixed;z-index:21;top:50%;left:50%;width:300px;max-width:calc(100vw - 32px);padding:16px;border:1px solid #2a2a29;border-radius:20px;background:#121212;transform:translate(-50%,-50%);transition:opacity 180ms var(--ease-out),transform 220ms var(--ease-out)}
@@ -141,6 +145,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
   .image-stack:has(.back-photo-hit:hover) .stack-home.is-back{transform:translateX(-3.5%) scale(.955);opacity:.78}
   .image-stack:has(.back-photo-hit:hover) .stack-account.is-back{transform:translateX(22.1%) scale(.955);opacity:.78}
   .hero-phone:hover,.visual-phone:hover{transform:scale(1.025)}
+  .project-pending:hover{transform:none}
+  .project-pending:hover .project-title{color:#fff}
 }
 
 @media(min-width:701px) and (max-width:1100px){.portfolio-layout{margin:32px;grid-template-columns:minmax(220px,28%) minmax(0,640px);gap:40px}.profile{top:32px}}
@@ -150,7 +156,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
   html[data-case-open=true] #root{position:fixed;inset:0;top:calc(-1 * var(--page-scroll,0px));overflow:hidden;width:100%}
   .portfolio-layout{display:flex;flex-direction:column;gap:40px;margin:calc(28px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))}
   .profile{position:static;width:100%;gap:28px}.profile-block:nth-child(2){max-width:300px}.profile-actions{max-width:360px;width:100%}
-  .projects{width:100%;gap:32px}.cover,.placeholder-cover{border-radius:20px}.project-title{font-size:16px;line-height:21px;letter-spacing:-.32px}.project-card{gap:12px}
+  .projects{width:100%;gap:32px}.cover,.placeholder-cover,.pending-cover{border-radius:20px}.project-title{font-size:16px;line-height:21px;letter-spacing:-.32px}.project-card{gap:12px}
   .case-backdrop{background:rgba(12,12,12,.7)}
   .case-viewport{position:relative;inset:auto;width:100%;overflow:visible;background:transparent;overscroll-behavior-y:auto}
   .case-scroll-content{padding:0;min-height:100dvh;min-height:100lvh}
