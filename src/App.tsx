@@ -25,13 +25,13 @@ function Icon({ name, size = 16 }: { name: string; size?: number }) {
   return <img className="icon" src={asset(`${name}.svg`)} width={size} height={size} alt="" draggable="false" />;
 }
 
-function MicroMorph({ children }: { children: string }) {
-  return <span className="micro-morph" key={children}>{[...children].map((letter, index) => <span className="micro-morph-letter" style={{ '--letter-index': index } as CSSProperties} key={`${children}-${index}`}>{letter === ' ' ? '\u00a0' : letter}</span>)}</span>;
+function BlurText({ text, visible }: { text: string; visible: boolean }) {
+  return <span className="blur-text" data-visible={visible} aria-hidden={!visible}>{[...text].map((letter, index) => <span className="blur-letter" style={{ '--letter-index': index } as CSSProperties} key={index}><TextMorph duration={180} numbers={false}>{letter === ' ' ? '\u00a0' : letter}</TextMorph></span>)}</span>;
 }
 
 function PendingProjectCard() {
   const [active, setActive] = useState(false);
-  return <button className="project-card project-pending" onMouseEnter={() => setActive(true)} onMouseLeave={() => setActive(false)} onFocus={() => setActive(true)} onBlur={() => setActive(false)} onClick={event => {
+  return <button className="project-card project-pending" onMouseEnter={() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) setActive(true); }} onMouseLeave={() => setActive(false)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setActive(true); }} onBlur={() => setActive(false)} onClick={event => {
     const card = event.currentTarget;
     card.classList.remove('is-denied');
     void card.offsetWidth;
@@ -40,8 +40,8 @@ function PendingProjectCard() {
     <span className={`pending-visual${active ? ' is-active' : ''}`}>
       <img className="pending-cover" src={asset('capsule-case-hq.png')} alt="" draggable="false" />
       <span className="pending-status" aria-hidden="true">
-        <img className="pending-lock" src={asset('lock.svg')} alt="" draggable="false" />
-        <span className="pending-status-text">{[...'Кейс в разработке'].map((letter, index) => <TextMorph className="pending-letter" duration={240} ease="cubic-bezier(0.23, 1, 0.32, 1)" locale="ru" numbers={false} scale={false} key={`${letter}-${index}`}>{active ? letter : ''}</TextMorph>)}</span>
+        <span className="pending-lock-track"><img className="pending-lock" src={asset('lock.svg')} alt="" draggable="false" /></span>
+        <span className="pending-status-text"><BlurText text="Кейс в разработке" visible={active} /></span>
       </span>
     </span>
     <span className="project-title">Капсула для отправки сообщения себе в будущее</span>
@@ -93,8 +93,8 @@ function ContactContent() {
     <div className="contact-heading"><Dialog.Title>Contact</Dialog.Title><Dialog.Close className="contact-close" aria-label="Закрыть"><Icon name="close" size={24} /></Dialog.Close></div>
     <Dialog.Description className="sr-only">Контакты</Dialog.Description>
     <div className="contact-links">
-      <button className={`contact-row${copied ? ' is-copied' : ''}`} onClick={copyEmail} onMouseEnter={() => setHovered('email')} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered('email')} onBlur={() => setHovered(null)} aria-label="Email"><Icon name="email" size={20} /><span className="contact-label"><span>Email</span><span>v@frlvv.ru</span></span><span className="contact-action" aria-live="polite"><MicroMorph>{copied ? '🎉 copied' : hovered === 'email' ? 'copy' : ''}</MicroMorph></span></button>
-      <a className="contact-row" href="https://t.me/vf433" target="_blank" rel="noreferrer" onMouseEnter={() => setHovered('telegram')} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered('telegram')} onBlur={() => setHovered(null)} aria-label="Telegram"><Icon name="telegram" size={20} /><span className="contact-label"><span>Telegram</span><span>vf433</span></span><span className="contact-action"><MicroMorph>{hovered === 'telegram' ? 'go' : ''}</MicroMorph></span></a>
+      <button className={`contact-row${copied ? ' is-copied' : ''}`} onClick={copyEmail} onMouseEnter={() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) setHovered('email'); }} onMouseLeave={() => setHovered(null)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setHovered('email'); }} onBlur={() => setHovered(null)} aria-label="Email"><Icon name="email" size={20} /><span className="contact-label"><span>Email</span><span>v@frlvv.ru</span></span><span className="contact-action" aria-live="polite"><BlurText text="copy" visible={!copied && hovered === 'email'} /><BlurText text="🎉 copied" visible={copied} /></span></button>
+      <a className="contact-row" href="https://t.me/vf433" target="_blank" rel="noreferrer" onMouseEnter={() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) setHovered('telegram'); }} onMouseLeave={() => setHovered(null)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setHovered('telegram'); }} onBlur={() => setHovered(null)} aria-label="Telegram"><Icon name="telegram" size={20} /><span className="contact-label"><span>Telegram</span><span>vf433</span></span><span className="contact-action"><BlurText text="go" visible={hovered === 'telegram'} /></span></a>
     </div>
     {error && <p className="copy-error" role="status">Не удалось скопировать. <a href="mailto:v@frlvv.ru">v@frlvv.ru</a></p>}
   </>;
