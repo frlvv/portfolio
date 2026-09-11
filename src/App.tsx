@@ -1,4 +1,3 @@
-/Users/frlv/.zprofile:3: no such file or directory: /usr/local/bin/brew
 import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 import Lenis from 'lenis';
