@@ -172,7 +172,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 @media(max-width:700px){
   body{padding:0}
   html[data-case-open=true] #root{position:absolute;left:0;right:0;top:calc(var(--case-scroll,0px) - var(--page-scroll,0px));height:calc(100lvh + var(--page-scroll,0px));min-height:0;overflow:clip;width:100%}
-  html[data-case-closing=true] .case-popup{transition:none;opacity:1}
+  html[data-case-open=true]{overflow-anchor:none}
   html[data-case-closing=true] .case-top{visibility:hidden}
   .portfolio-layout[data-case-open=true]{opacity:1}
   .portfolio-layout{display:flex;flex-direction:column;gap:40px;margin:calc(28px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))}
@@ -181,9 +181,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
   .case-backdrop{display:none}
   .case-viewport{position:relative;inset:auto;width:100%;overflow:visible;background:transparent;overscroll-behavior-y:auto}
   .case-scroll-content{padding:0;min-height:100dvh;min-height:100lvh}
-  .case-popup{width:100%;min-height:100dvh;min-height:100lvh;padding:calc(32px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));border-radius:24px 24px 0 0;transition:opacity 180ms ease,transform 220ms var(--ease-drawer);touch-action:pan-y}
+  .case-popup{width:100%;min-height:100dvh;min-height:100lvh;padding:calc(32px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));border-radius:24px 24px 0 0;transform-origin:center top;touch-action:pan-y}
   .case-popup[data-starting-style]{transform:translateY(calc(var(--drag-y,0px) + 10px)) scale(.992);opacity:0}
-  .case-popup[data-ending-style]{transform:translateY(calc(var(--drag-y,0px) + 14px)) scale(.99);opacity:0;transition-duration:180ms}
   .case-swipe-zone{display:flex;align-items:flex-start;justify-content:center;position:absolute;z-index:8;top:0;left:0;width:100%;height:calc(18px + env(safe-area-inset-top));padding-top:calc(8px + env(safe-area-inset-top));pointer-events:none}
   .case-swipe-zone span{display:block;width:40px;height:5px;border-radius:999px;background:#626262}
   .case-close{top:calc(12px + env(safe-area-inset-top));z-index:9;margin:-7px -5px -41px 0;width:48px;height:48px}
