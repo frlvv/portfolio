@@ -324,20 +324,25 @@ export default function App() {
   }, []);
   useEffect(() => {
     const root = document.documentElement;
+    const body = document.body;
     const theme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     let timer: number | undefined;
-    const apply = (open: boolean) => {
-      if (open) root.dataset.caseOpen = 'true'; else delete root.dataset.caseOpen;
-      if (theme) theme.content = open ? '#121212' : '#0c0c0c';
+    const applyChromeColor = (open: boolean) => {
+      const color = open ? '#121212' : '#0c0c0c';
+      root.style.backgroundColor = color;
+      body.style.backgroundColor = color;
+      if (theme) theme.content = color;
     };
     if (caseOpen) {
       pageScroll.current = window.scrollY;
       root.style.setProperty('--page-scroll', `${pageScroll.current}px`);
-      apply(true);
+      root.dataset.caseOpen = 'true';
+      applyChromeColor(true);
       window.scrollTo(0, 0);
     } else if (root.dataset.caseOpen) {
+      applyChromeColor(false);
       timer = window.setTimeout(() => {
-        apply(false);
+        delete root.dataset.caseOpen;
         root.style.removeProperty('--page-scroll');
         window.scrollTo(0, pageScroll.current);
       }, 280);
