@@ -12,7 +12,7 @@ function useSmoothScroll(blocked = false, wrapper?: React.RefObject<HTMLDivEleme
     let lenis: Lenis | undefined;
     const setup = () => {
       lenis?.destroy();
-      if (preference.matches || blocked || (wrapper && !wrapper.current) || (wrapper && matchMedia('(max-width:700px)').matches)) return;
+      if (preference.matches || blocked || (wrapper && !wrapper.current) || matchMedia('(max-width:700px)').matches) return;
       lenis = new Lenis({ wrapper: wrapper?.current ?? window, content: content?.current ?? document.documentElement, autoRaf: true, smoothWheel: true, syncTouch: false, lerp: 0.2, overscroll: false });
     };
     setup();
@@ -189,8 +189,7 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
   const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [swipeClosing, setSwipeClosing] = useState(false), [showTop, setShowTop] = useState(false);
   useSmoothScroll(false, wrapper, content);
   useLayoutEffect(() => {
-    if (matchMedia('(max-width:700px)').matches) window.scrollTo(0, 0);
-    else if (wrapper.current) wrapper.current.scrollTop = 0;
+    if (wrapper.current) wrapper.current.scrollTop = 0;
     setShowTop(false);
   }, []);
   useEffect(() => {
@@ -322,32 +321,29 @@ export default function App() {
       image.decode?.().catch(() => undefined);
     }
   }, []);
-  useEffect(() => {
+  const changeCaseOpen = (open: boolean) => {
     const root = document.documentElement;
-    let timer: number | undefined;
-    if (caseOpen) {
+    if (open && !root.dataset.caseOpen) {
       pageScroll.current = window.scrollY;
       root.style.setProperty('--page-scroll', `${pageScroll.current}px`);
       root.dataset.caseOpen = 'true';
-      window.scrollTo(0, 0);
-    } else if (root.dataset.caseOpen) {
-      timer = window.setTimeout(() => {
-        delete root.dataset.caseOpen;
-        root.style.removeProperty('--page-scroll');
-        window.scrollTo(0, pageScroll.current);
-        if (pageScroll.current < 1) window.requestAnimationFrame(() => {
-          window.scrollTo(0, 1);
-          window.requestAnimationFrame(() => window.scrollTo(0, 0));
-        });
-      }, 280);
+      if (matchMedia('(max-width:700px)').matches) window.scrollTo({ top: 0, behavior: 'instant' });
     }
-    return () => { if (timer) window.clearTimeout(timer); };
-  }, [caseOpen]);
+    setCaseOpen(open);
+  };
+  const completeCaseChange = (open: boolean) => {
+    if (open) return;
+    const root = document.documentElement;
+    if (!root.dataset.caseOpen) return;
+    delete root.dataset.caseOpen;
+    root.style.removeProperty('--page-scroll');
+    if (matchMedia('(max-width:700px)').matches) window.scrollTo({ top: pageScroll.current, behavior: 'instant' });
+  };
   return <><a className="skip-link" href="#work">К работам</a><main className="portfolio-layout" data-case-open={caseOpen}>
     <aside className="profile"><div className="profile-block"><p className="eyebrow">Влад Фролов</p><h1>Продуктовый дизайнер</h1></div><div className="profile-block"><p className="eyebrow">Скиллы</p><p>research, user flows, wireframing, prototyping, usability testing, design systems, edge cases, animation, lottie, handoff, design review</p></div><div className="profile-actions">
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}Vlad-Frolov-CV.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={setCaseOpen} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => setCaseOpen(false)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
+    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
   </main></>;
 }
