@@ -171,11 +171,12 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 @media(max-width:1000px){.context-section{grid-template-columns:minmax(0,1fr) 250px;gap:32px}.image-slider{width:250px}}
 @media(max-width:700px){
   body{padding:0}
-  html[data-case-open=true] #root{position:fixed;inset:0;top:calc(-1 * var(--page-scroll,0px));overflow:hidden;width:100%}
+  html[data-case-open=true] #root{position:absolute;left:0;right:0;top:calc(-1 * var(--page-scroll,0px));height:calc(100lvh + var(--page-scroll,0px));min-height:0;overflow:clip;width:100%}
+  .portfolio-layout[data-case-open=true]{opacity:1}
   .portfolio-layout{display:flex;flex-direction:column;gap:40px;margin:calc(28px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))}
   .profile{position:static;width:100%;gap:28px}.profile-block:nth-child(2){max-width:300px}.profile-actions{max-width:360px;width:100%}
   .projects{width:100%;gap:32px}.cover,.placeholder-cover,.pending-visual{border-radius:20px}.project-title{font-size:16px;line-height:21px;letter-spacing:-.32px}.project-card{gap:12px}
-  .case-backdrop{background:rgba(12,12,12,.7)}
+  .case-backdrop{display:none}
   .case-viewport{position:relative;inset:auto;width:100%;overflow:visible;background:transparent;overscroll-behavior-y:auto}
   .case-scroll-content{padding:0;min-height:100dvh;min-height:100lvh}
   .case-popup{width:100%;min-height:100dvh;min-height:100lvh;padding:calc(32px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(56px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));border-radius:24px 24px 0 0;transition:opacity 180ms ease,transform 220ms var(--ease-drawer);touch-action:pan-y}
