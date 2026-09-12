@@ -282,7 +282,7 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     requestAnimationFrame(step);
   }
   const popupStyle = { '--drag-y': `${dragY}px` } as CSSProperties;
-  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup ref={popup} className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle} onPointerDown={event => {
+  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup ref={popup} className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle} data-displaced={dragY > 0 || undefined} onPointerDown={event => {
       if (event.pointerType === 'touch') return;
       if ((event.target as HTMLElement).closest('button,a')) return;
       const scrollTop = matchMedia('(max-width:700px)').matches ? window.scrollY : (wrapper.current?.scrollTop ?? 0);
