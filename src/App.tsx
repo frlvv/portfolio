@@ -1,4 +1,5 @@
 import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Dialog } from '@base-ui/react/dialog';
 import Lenis from 'lenis';
 import { TextMorph } from 'torph/react';
@@ -183,10 +184,10 @@ function CaseContent() {
 
 type SheetDrag = { source: 'touch' | 'pointer'; id: number; x: number; y: number; lastY: number; lastTime: number; velocity: number; committed: boolean };
 
-function CaseViewport({ onClose }: { onClose: () => void }) {
+function CaseViewport({ onClose }: { onClose: (velocity?: number) => void }) {
   const wrapper = useRef<HTMLDivElement>(null), content = useRef<HTMLDivElement>(null), popup = useRef<HTMLDivElement>(null);
   const drag = useRef<SheetDrag | null>(null);
-  const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [swipeClosing, setSwipeClosing] = useState(false), [showTop, setShowTop] = useState(false);
+  const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [showTop, setShowTop] = useState(false);
   useSmoothScroll(false, wrapper, content);
   useLayoutEffect(() => {
     if (wrapper.current) wrapper.current.scrollTop = 0;
@@ -209,8 +210,7 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     const shouldClose = !cancelled && gesture.committed && (distance > Math.min(140, innerHeight * .2) || projectedDistance > innerHeight * .28);
     if (shouldClose) {
       setDragY(distance);
-      setSwipeClosing(true);
-      requestAnimationFrame(onClose);
+      requestAnimationFrame(() => onClose(Math.max(0, gesture.velocity) * 1000));
     } else {
       setDragY(0);
     }
@@ -283,7 +283,7 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
     requestAnimationFrame(step);
   }
   const popupStyle = { '--drag-y': `${dragY}px` } as CSSProperties;
-  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup ref={popup} className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle} data-swipe-close={swipeClosing || undefined} onPointerDown={event => {
+  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup ref={popup} className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle} onPointerDown={event => {
       if (event.pointerType === 'touch') return;
       if ((event.target as HTMLElement).closest('button,a')) return;
       const scrollTop = matchMedia('(max-width:700px)').matches ? window.scrollY : (wrapper.current?.scrollTop ?? 0);
@@ -313,6 +313,8 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
 export default function App() {
   const [contactOpen, setContactOpen] = useState(false), [caseOpen, setCaseOpen] = useState(false);
   const pageScroll = useRef(0);
+  const caseActions = useRef<Dialog.Root.Actions | null>(null);
+  const closingCase = useRef(false);
   useSmoothScroll(contactOpen || caseOpen);
   useEffect(() => {
     for (const file of ['case-bg.png', 'hero-hub.png', 'hero-goal.png']) {
@@ -321,8 +323,61 @@ export default function App() {
       image.decode?.().catch(() => undefined);
     }
   }, []);
-  const changeCaseOpen = (open: boolean) => {
+  const changeCaseOpen = (open: boolean, velocity = 0) => {
     const root = document.documentElement;
+    if (closingCase.current) return;
+    if (!open && matchMedia('(max-width:700px)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const sheet = document.querySelector<HTMLElement>('.case-popup');
+      const viewport = document.querySelector<HTMLElement>('.case-viewport');
+      const main = document.querySelector<HTMLElement>('.portfolio-layout');
+      if (sheet && viewport && main) {
+        closingCase.current = true;
+        const sheetTop = sheet.getBoundingClientRect().top;
+        const transform = getComputedStyle(sheet).transform;
+        const start = transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m42;
+        const edge = Math.max(window.innerHeight, window.screen.height, window.visualViewport?.height ?? 0);
+        const distance = Math.max(80, edge - sheetTop + 80);
+        const initialVelocity = Math.min(Math.max(0, velocity), distance * 18);
+        viewport.style.height = `${viewport.offsetHeight}px`;
+        viewport.style.overflow = 'clip';
+        root.style.setProperty('--case-scroll', `${window.scrollY}px`);
+        root.dataset.caseClosing = 'true';
+        const frames: Keyframe[] = [];
+        const mainFrames: Keyframe[] = [];
+        const progresses: number[] = [];
+        const mainTransform = getComputedStyle(main).transform;
+        const mainScale = mainTransform === 'none' ? 1 : new DOMMatrixReadOnly(mainTransform).m11;
+        let elapsed = 0;
+        for (let frame = 0; frame <= 60; frame++) {
+          elapsed = frame / 120;
+          const remaining = (distance + (18 * distance - initialVelocity) * elapsed) * Math.exp(-18 * elapsed);
+          const progress = 1 - remaining / distance;
+          frames.push({ transform: `translateY(${start + distance - remaining}px)` });
+          progresses.push(progress);
+          if (sheetTop + distance - remaining > edge + 16) break;
+        }
+        const finalProgress = progresses[progresses.length - 1];
+        for (const progress of progresses) mainFrames.push({ transform: `scale(${mainScale + (1 - mainScale) * progress / finalProgress})` });
+        const options: KeyframeAnimationOptions = { duration: elapsed * 1000, easing: 'linear', fill: 'forwards' };
+        const movement = sheet.animate(frames, options);
+        const reveal = main.animate(mainFrames, options);
+        void movement.finished.then(() => {
+          sheet.style.visibility = 'hidden';
+          viewport.style.display = 'none';
+          main.style.transition = 'none';
+          main.style.transform = 'scale(1)';
+          flushSync(() => setCaseOpen(false));
+          flushSync(() => caseActions.current?.unmount());
+          completeCaseChange(false);
+          movement.cancel();
+          reveal.cancel();
+          main.style.removeProperty('transform');
+          main.style.removeProperty('transition');
+          closingCase.current = false;
+        });
+        return;
+      }
+    }
     if (open && !root.dataset.caseOpen) {
       pageScroll.current = window.scrollY;
       root.style.setProperty('--page-scroll', `${pageScroll.current}px`);
@@ -336,7 +391,9 @@ export default function App() {
     const root = document.documentElement;
     if (!root.dataset.caseOpen) return;
     delete root.dataset.caseOpen;
+    delete root.dataset.caseClosing;
     root.style.removeProperty('--page-scroll');
+    root.style.removeProperty('--case-scroll');
     if (matchMedia('(max-width:700px)').matches) window.scrollTo({ top: pageScroll.current, behavior: 'instant' });
   };
   return <><a className="skip-link" href="#work">К работам</a><main className="portfolio-layout" data-case-open={caseOpen}>
@@ -344,6 +401,6 @@ export default function App() {
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}Vlad-Frolov-CV.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
+    <section className="projects" id="work"><Dialog.Root actionsRef={caseActions} open={caseOpen} onOpenChange={open => changeCaseOpen(open)} onOpenChangeComplete={completeCaseChange} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={velocity => changeCaseOpen(false, velocity)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
   </main></>;
 }
