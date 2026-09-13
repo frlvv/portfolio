@@ -178,7 +178,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
   html[data-case-closing=true] .case-top{visibility:hidden}
   .portfolio-layout[data-case-open=true]{opacity:1}
   .portfolio-layout{display:flex;flex-direction:column;gap:40px;margin:calc(28px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))}
-  .profile{position:static;width:100%;gap:28px}.profile-block:nth-child(3){max-width:300px}.profile-actions{max-width:360px;width:100%}
+  .profile{position:static;width:100%;gap:28px}.profile-block:nth-of-type(4){max-width:300px}.profile-actions{max-width:360px;width:100%}
   .projects{width:100%;gap:32px}.cover,.placeholder-cover,.pending-visual{border-radius:20px}.project-title{font-size:16px;line-height:21px;letter-spacing:-.32px}.project-card{gap:12px}
   .case-backdrop{display:none}
   .case-viewport{position:relative;inset:auto;width:100%;overflow:visible;background:transparent;overscroll-behavior-y:auto}
@@ -202,3 +202,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 
 .result-overview{display:block;width:100%;height:auto;margin-bottom:28px;pointer-events:none;user-select:none;-webkit-user-select:none}
 .case-updated{margin-top:64px}
+
+.profile-portrait{position:relative;width:183px;height:294px;flex:none;align-self:center;overflow:hidden;transform-origin:50% 65%;pointer-events:none;user-select:none}
+.profile-portrait img{position:absolute;display:block;width:145.63%;height:112.91%;max-width:none;left:-22.33%;top:-5.12%;object-fit:fill}
+@media(max-width:700px),(prefers-reduced-motion:reduce){.profile-portrait{transform:none!important}}
