@@ -178,7 +178,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
   html[data-case-closing=true] .case-top{visibility:hidden}
   .portfolio-layout[data-case-open=true]{opacity:1}
   .portfolio-layout{display:flex;flex-direction:column;gap:40px;margin:calc(28px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))}
-  .profile{position:static;width:100%;gap:28px}.profile-block:nth-child(2){max-width:300px}.profile-actions{max-width:360px;width:100%}
+  .profile{position:static;width:100%;gap:28px}.profile-block:nth-child(3){max-width:300px}.profile-actions{max-width:360px;width:100%}
   .projects{width:100%;gap:32px}.cover,.placeholder-cover,.pending-visual{border-radius:20px}.project-title{font-size:16px;line-height:21px;letter-spacing:-.32px}.project-card{gap:12px}
   .case-backdrop{display:none}
   .case-viewport{position:relative;inset:auto;width:100%;overflow:visible;background:transparent;overscroll-behavior-y:auto}
