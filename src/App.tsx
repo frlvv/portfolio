@@ -352,7 +352,7 @@ export default function App() {
   return <><a className="skip-link" href="#work">К работам</a><main className="portfolio-layout" data-case-open={caseOpen}>
     <aside className="profile"><div className="profile-block"><p className="eyebrow">Влад Фролов</p><h1>Продуктовый дизайнер</h1></div><div className="profile-block"><p className="eyebrow">Скиллы</p><p>research, user flows, wireframing, prototyping, usability testing, design systems, edge cases, animation, lottie, handoff, design review</p></div><div className="profile-actions">
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
-      <a className="cv-button" href={`${import.meta.env.BASE_URL}CV%20%E2%88%95%20Vlad%20Frolov%20%E2%88%95%20Product%20Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
+      <a className="cv-button" href={`${import.meta.env.BASE_URL}CV_Vlad_Frolov_Product_Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
     <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
   </main></>;
