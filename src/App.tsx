@@ -49,19 +49,26 @@ function PendingProjectCard() {
   </button>;
 }
 
+function PhoneMockup({ screen, className }: { screen: 'hub' | 'goal'; className: string }) {
+  return <div className={className}>
+    <img className="mockup-screen" src={asset(`${screen}-screen.png`)} alt="" draggable="false" />
+    <img className="mockup-frame" src={asset('phone-frame.png')} alt="" draggable="false" />
+  </div>;
+}
+
 function Cover() {
   return <div className="cover">
     <img className="cover-background" src={asset('background.png')} alt="" draggable="false" />
-    <img className="cover-phone cover-phone-first" src={asset('savings-hub.png')} alt="" draggable="false" />
-    <img className="cover-phone cover-phone-second" src={asset('savings-goal.png')} alt="" draggable="false" />
+    <PhoneMockup screen="hub" className="cover-phone cover-phone-first layered-phone" />
+    <PhoneMockup screen="goal" className="cover-phone cover-phone-second layered-phone" />
   </div>;
 }
 
 function HeroCover() {
   return <div className="hero-cover">
     <img className="visual-background" src={asset('case-bg.png')} alt="" draggable="false" />
-    <div className="hero-phone hero-phone-first"><img src={asset('hero-hub.png')} alt="" draggable="false" /></div>
-    <div className="hero-phone hero-phone-second"><img src={asset('hero-goal.png')} alt="" draggable="false" /></div>
+    <PhoneMockup screen="hub" className="hero-phone hero-phone-first layered-phone" />
+    <PhoneMockup screen="goal" className="hero-phone hero-phone-second layered-phone" />
   </div>;
 }
 
