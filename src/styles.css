@@ -209,5 +209,5 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 .cover .cover-phone-first{left:5.9375%;top:18.4375%}
 .cover .cover-phone-second{left:42.5%;top:10.9375%}
 .hero-cover .layered-phone{height:auto;aspect-ratio:450/920}
-.layered-phone img.mockup-screen{position:absolute;display:block;width:89.333333%;height:95%;left:5.333333%;top:2.5%;border-radius:14.255%;object-fit:fill;pointer-events:none;user-select:none}
+.layered-phone img.mockup-screen{position:absolute;display:block;width:89.333333%;height:95%;left:5.333333%;top:2.5%;border-radius:14.255% / 6.557%;object-fit:fill;pointer-events:none;user-select:none}
 .layered-phone img.mockup-frame{position:absolute;display:block;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
