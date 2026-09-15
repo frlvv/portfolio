@@ -1,3 +1,5 @@
+import { motion, useMotionTemplate, useSpring } from 'motion/react';
+import GradientBackground from './GradientBackground';
 import Portrait from './Portrait';
 import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
@@ -57,16 +59,32 @@ function PhoneMockup({ screen, className }: { screen: 'hub' | 'goal'; className:
 }
 
 function Cover() {
-  return <div className="cover">
-    <img className="cover-background" src={asset('background.png')} alt="" draggable="false" />
-    <PhoneMockup screen="hub" className="cover-phone cover-phone-first layered-phone" />
-    <PhoneMockup screen="goal" className="cover-phone cover-phone-second layered-phone" />
+  const [hovered, setHovered] = useState(false);
+  const x = useSpring(0, { mass: 1, stiffness: 100, damping: 20 });
+  const y = useSpring(0, { mass: 1, stiffness: 100, damping: 20 });
+  const depth = useSpring(0, { mass: 1, stiffness: 100, damping: 20 });
+  const transform = useMotionTemplate`perspective(1200px) translateZ(${depth}px) rotateX(${y}deg) rotateY(${x}deg)`;
+  const reset = () => { setHovered(false); x.set(0); y.set(0); depth.set(0); };
+  return <div className="cover-interaction" onPointerMove={event => {
+    if (event.pointerType !== 'mouse' || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+    setHovered(true);
+    if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    x.set(-(event.clientX - rect.left - rect.width / 2) / rect.width * 3);
+    y.set((event.clientY - rect.top - rect.height / 2) / rect.height * 3);
+    depth.set(-4);
+  }} onPointerLeave={reset} onPointerCancel={reset} onClick={reset}>
+    <motion.div className="cover" style={{ transform }}>
+      <GradientBackground active={hovered} />
+      <PhoneMockup screen="hub" className="cover-phone cover-phone-first layered-phone" />
+      <PhoneMockup screen="goal" className="cover-phone cover-phone-second layered-phone" />
+    </motion.div>
   </div>;
 }
 
 function HeroCover() {
   return <div className="hero-cover">
-    <img className="visual-background" src={asset('case-bg.png')} alt="" draggable="false" />
+    <GradientBackground active />
     <PhoneMockup screen="hub" className="hero-phone hero-phone-first layered-phone" />
     <PhoneMockup screen="goal" className="hero-phone hero-phone-second layered-phone" />
   </div>;
@@ -362,6 +380,6 @@ export default function App() {
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}CV_Vlad_Frolov_Product_Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus"><Dialog.Trigger className="project-card" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
+    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus"><Dialog.Trigger className="project-card project-animated" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
   </main></>;
 }
