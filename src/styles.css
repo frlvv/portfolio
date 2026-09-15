@@ -201,7 +201,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 .result-overview{display:block;width:100%;height:auto;margin-bottom:28px;pointer-events:none;user-select:none;-webkit-user-select:none}
 .case-updated{margin-top:64px}
 
-.profile-portrait{position:relative;width:123px;aspect-ratio:820/1024;flex:none;align-self:flex-start;overflow:hidden;transform-origin:50% 65%;pointer-events:none;user-select:none}
+.profile-portrait{position:relative;width:123px;aspect-ratio:123/198;flex:none;align-self:flex-start;overflow:hidden;transform-origin:50% 65%;pointer-events:none;user-select:none}
 .profile-portrait img{position:absolute;display:block;width:100%;height:100%;max-width:none;left:0;top:0;object-fit:contain;object-position:bottom}
 @media(max-width:700px),(prefers-reduced-motion:reduce){.profile-portrait{transform:none!important}}
 
@@ -224,3 +224,4 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 .gradient-background::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:.12;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23808080' filter='url(%23n)' d='M0 0h160v160H0z'/%3E%3C/svg%3E");mix-blend-mode:soft-light}
 @media(hover:hover) and (pointer:fine){.project-animated:hover{transform:none}}
 @media(max-width:700px),(hover:none),(prefers-reduced-motion:reduce){.cover-interaction .cover{transform:none!important}}
+@media(max-width:700px){.hero-cover .layered-phone img.mockup-screen{left:calc(5.333333% - .5px);top:calc(2.5% - .5px);width:calc(89.333333% + 1px);height:calc(95% + 1px)}}

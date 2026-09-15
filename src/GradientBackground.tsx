@@ -13,7 +13,6 @@ export default function GradientBackground({ active }: { active: boolean }) {
         void element.play().catch(() => {});
       } else {
         element.pause();
-        setPlaying(false);
       }
     };
     const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; update(); });
@@ -29,6 +28,6 @@ export default function GradientBackground({ active }: { active: boolean }) {
   }, [active]);
   return <div className="gradient-background" aria-hidden="true">
     <img src={`${import.meta.env.BASE_URL}assets/gradient-poster.jpg`} alt="" draggable="false" />
-    <video ref={video} src={`${import.meta.env.BASE_URL}assets/gradient.mp4`} poster={`${import.meta.env.BASE_URL}assets/gradient-poster.jpg`} muted loop playsInline preload="metadata" data-playing={active && playing} onPlaying={() => setPlaying(true)} onPause={() => setPlaying(false)} />
+    <video ref={video} src={`${import.meta.env.BASE_URL}assets/gradient.mp4`} poster={`${import.meta.env.BASE_URL}assets/gradient-poster.jpg`} muted loop playsInline preload="metadata" data-playing={playing} onPlaying={() => setPlaying(true)} />
   </div>;
 }

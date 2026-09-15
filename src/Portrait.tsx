@@ -33,6 +33,6 @@ export default function Portrait({ blocked }: { blocked: boolean }) {
   }, [blocked, x, y]);
 
   return <motion.div className="profile-portrait" style={{ transform }}>
-    <img src={`${import.meta.env.BASE_URL}assets/portrait.png`} alt="" width="820" height="1024" draggable="false" />
+    <img src={`${import.meta.env.BASE_URL}assets/portrait.png`} alt="" width="492" height="792" draggable="false" />
   </motion.div>;
 }

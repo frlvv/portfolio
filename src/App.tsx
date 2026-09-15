@@ -7,6 +7,7 @@ import Lenis from 'lenis';
 import { TextMorph } from 'torph/react';
 
 const asset = (name: string) => `${import.meta.env.BASE_URL}assets/${name}`;
+const imageDimensions: Record<string, { width: number; height: number }> = {"hero-hub.png": {"width": 2144, "height": 2144}, "type-goal.png": {"width": 2144, "height": 2144}, "amount.png": {"width": 2144, "height": 2144}, "plan.png": {"width": 2144, "height": 2144}, "no-plan.png": {"width": 2144, "height": 2144}, "screen-goal.png": {"width": 2144, "height": 2144}, "plan-overview.png": {"width": 2144, "height": 2144}, "plan-adjust.png": {"width": 2144, "height": 2144}, "quick-amount.png": {"width": 2144, "height": 2144}, "quick-plan.png": {"width": 2144, "height": 2144}, "quick-hold.png": {"width": 2144, "height": 2144}, "current-home.png": {"width": 828, "height": 1792}, "current-account.png": {"width": 828, "height": 1792}};
 const caseTitle = 'Переосмысление опыта накопления в Т-Банке';
 
 function useSmoothScroll(blocked = false, wrapper?: React.RefObject<HTMLDivElement | null>, content?: React.RefObject<HTMLDivElement | null>) {
@@ -70,8 +71,8 @@ function Cover() {
     setHovered(true);
     if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
     const rect = event.currentTarget.getBoundingClientRect();
-    x.set(-(event.clientX - rect.left - rect.width / 2) / rect.width * 3);
-    y.set((event.clientY - rect.top - rect.height / 2) / rect.height * 3);
+    x.set((event.clientX - rect.left - rect.width / 2) / rect.width * 3);
+    y.set(-(event.clientY - rect.top - rect.height / 2) / rect.height * 3);
     depth.set(-4);
   }} onPointerLeave={reset} onPointerCancel={reset} onClick={reset}>
     <motion.div className="cover" style={{ transform }}>
@@ -96,10 +97,10 @@ const visualPhones: Record<VisualKind, string[]> = {
 };
 
 function CaseVisual({ kind }: { kind: VisualKind }) {
-  if (kind === 'type') return <div className="case-visual visual-type-original"><img className="visual-background" src={asset('case-bg.png')} alt="" draggable="false" loading="lazy" /><div className="visual-type-phone"><img className="visual-composite" src={asset('type-goal-original.png')} alt="Четыре типа копилки" draggable="false" loading="lazy" /></div></div>;
+  if (kind === 'type') return <div className="case-visual visual-type-original"><img className="visual-background" src={asset('case-bg.png')} width={1254} height={1254} alt="" draggable="false" loading="lazy" /><div className="visual-type-phone"><img className="visual-composite" src={asset('type-goal-original.png')} width={876} height={1810} alt="Четыре типа копилки" draggable="false" loading="lazy" /></div></div>;
   return <div className={`case-visual visual-${kind}`}>
-    <img className="visual-background" src={asset('case-bg.png')} alt="" draggable="false" loading="lazy" />
-    {visualPhones[kind].map((file, index) => <div className={`visual-phone visual-phone-${index + 1}`} key={file}><img src={asset(file)} alt="" draggable="false" loading="lazy" /></div>)}
+    <img className="visual-background" src={asset('case-bg.png')} width={1254} height={1254} alt="" draggable="false" loading="lazy" />
+    {visualPhones[kind].map((file, index) => <div className={`visual-phone visual-phone-${index + 1}`} key={file}><img src={asset(file)} {...imageDimensions[file]} alt="" draggable="false" loading="lazy" /></div>)}
   </div>;
 }
 
@@ -164,7 +165,7 @@ function ImageSlider() {
     }} onPointerCancel={() => { pointer.current = null; }}>
       {items.map((item, index) => <button key={item.file} data-index={index} className={`stack-slide ${index === active ? 'is-front' : 'is-back'} ${index === 0 ? 'stack-home' : 'stack-account'}`} onClick={() => {
         if (suppressClick.current) { suppressClick.current = false; return; } change(index);
-      }} aria-label={item.alt} aria-current={index === active ? 'true' : undefined}><img src={asset(item.file)} alt="" draggable="false" loading="lazy" /></button>)}
+      }} aria-label={item.alt} aria-current={index === active ? 'true' : undefined}><img src={asset(item.file)} {...imageDimensions[item.file]} alt="" draggable="false" loading="lazy" /></button>)}
       <button className={`back-photo-hit back-photo-hit-${active}`} onClick={() => {
         if (suppressClick.current) { suppressClick.current = false; return; }
         change(active + 1);
