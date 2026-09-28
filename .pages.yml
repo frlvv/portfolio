@@ -33,6 +33,46 @@ content:
             label: Текст
             type: text
             required: true
+  - name: callouts
+    label: Оформление гипотез и тестов
+    type: file
+    path: content/callouts.json
+    format: json
+    operations:
+      delete: false
+    fields:
+      - name: hypothesis
+        label: Плашка «Гипотеза»
+        type: object
+        fields:
+          - name: icon
+            label: Иконка или эмодзи
+            type: string
+          - name: title
+            label: Заголовок
+            type: string
+          - name: color
+            label: Цвет заголовка
+            type: string
+          - name: backgroundOpacity
+            label: Прозрачность фона, например 16%
+            type: string
+      - name: test
+        label: Плашка «Юзабилити-тест»
+        type: object
+        fields:
+          - name: icon
+            label: Иконка или эмодзи
+            type: string
+          - name: title
+            label: Заголовок
+            type: string
+          - name: color
+            label: Цвет заголовка
+            type: string
+          - name: backgroundOpacity
+            label: Прозрачность фона, например 16%
+            type: string
   - name: cases
     label: Кейсы
     type: collection
@@ -93,9 +133,6 @@ content:
       - name: role
         label: Роль
         type: text
-      - name: updated
-        label: Когда обновлён
-        type: string
       - name: slides
         label: Фото в слайдере «Контекст»
         type: object
@@ -149,12 +186,18 @@ content:
               - name: hypothesis
                 label: Гипотеза
                 type: text
+              - name: showHypothesis
+                label: Показывать гипотезу
+                type: boolean
               - name: body
                 label: Решение
                 type: rich-text
               - name: test
                 label: Что проверить
                 type: text
+              - name: showTest
+                label: Показывать тестирование
+                type: boolean
               - name: visual
                 label: Готовый мокап
                 type: select
@@ -163,6 +206,27 @@ content:
               - name: image
                 label: Своя картинка вместо мокапа
                 type: image
+              - name: mediaMode
+                label: Тип визуала для своих изображений
+                type: select
+                options:
+                  values:
+                    - name: photo
+                      label: Фото
+                    - name: mockup
+                      label: Мокапы
+              - name: items
+                label: Фото и мокапы по порядку
+                type: object
+                list: true
+                fields:
+                  - name: image
+                    label: Фото или мокап
+                    type: image
+                    required: true
+                  - name: label
+                    label: Подпись
+                    type: string
           - name: image
             label: Фото
             fields:
@@ -187,3 +251,30 @@ content:
               - name: body
                 label: Текст
                 type: rich-text
+          - name: gallery
+            label: Галерея фото или мокапов
+            fields:
+              - name: heading
+                label: Заголовок
+                type: string
+              - name: mediaMode
+                label: Тип визуала
+                type: select
+                options:
+                  values:
+                    - name: photo
+                      label: Фото
+                    - name: mockup
+                      label: Мокапы
+              - name: items
+                label: Фото в нужном порядке
+                type: object
+                list: true
+                fields:
+                  - name: image
+                    label: Фото или мокап
+                    type: image
+                    required: true
+                  - name: label
+                    label: Подпись
+                    type: string

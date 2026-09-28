@@ -6,7 +6,7 @@ import { Dialog } from '@base-ui/react/dialog';
 import Lenis from 'lenis';
 import { TextMorph } from 'torph/react';
 import Markdown from 'react-markdown';
-import { cases, media, profileContent, type PortfolioCase, type CaseSection } from './content';
+import { cases, media, profileContent, projectUpdated, solutionCallouts, type PortfolioCase, type CaseSection } from './content';
 
 const asset = (name: string) => `${import.meta.env.BASE_URL}assets/${name}`;
 const imageDimensions: Record<string, { width: number; height: number }> = {"hero-hub.png": {"width": 2144, "height": 2144}, "type-goal.png": {"width": 2144, "height": 2144}, "amount.png": {"width": 2144, "height": 2144}, "plan.png": {"width": 2144, "height": 2144}, "no-plan.png": {"width": 2144, "height": 2144}, "screen-goal.png": {"width": 2144, "height": 2144}, "plan-overview.png": {"width": 2144, "height": 2144}, "plan-adjust.png": {"width": 2144, "height": 2144}, "quick-amount.png": {"width": 2144, "height": 2144}, "quick-plan.png": {"width": 2144, "height": 2144}, "quick-hold.png": {"width": 2144, "height": 2144}, "current-home.png": {"width": 828, "height": 1792}, "current-account.png": {"width": 828, "height": 1792}};
@@ -179,11 +179,13 @@ function ImageSlider({ project }: { project: PortfolioCase }) {
 }
 
 function SolutionNote({ type, children }: { type: 'hypothesis' | 'test'; children: React.ReactNode }) {
-  return <div className={`solution-note solution-note-${type}`}><span className="solution-note-icon">{type === 'hypothesis' ? '💡' : '🔎'}</span><div><strong>{type === 'hypothesis' ? 'Гипотеза' : 'Что проверю на юзабилити-тесте'}</strong><p>{children}</p></div></div>;
+  const settings = solutionCallouts[type];
+  return <div className={`solution-note solution-note-${type}`} style={{ '--note-color': settings.color, '--note-opacity': settings.backgroundOpacity } as CSSProperties}><span className="solution-note-icon">{settings.icon}</span><div><strong>{settings.title}</strong><p>{children}</p></div></div>;
 }
 
 function Solution({ section }: { section: CaseSection }) {
-  return <div className="solution-block"><div className="solution-copy"><h3>{section.heading}</h3>{section.hypothesis && <SolutionNote type="hypothesis">{section.hypothesis}</SolutionNote>}<div className="body-copy"><Markdown>{section.body}</Markdown></div>{section.test && <SolutionNote type="test">{section.test}</SolutionNote>}</div><CaseVisual kind={section.visual} image={section.image} /></div>;
+  const uploadedMedia = section.items?.length ? <div className={`solution-media-gallery case-media-${section.mediaMode || 'photo'}`}>{section.items.map((item, index) => <figure key={`${item.image}-${index}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</div> : <CaseVisual kind={section.visual} image={section.image} />;
+  return <div className="solution-block"><div className="solution-copy"><h3>{section.heading}</h3>{section.hypothesis && section.showHypothesis !== false && <SolutionNote type="hypothesis">{section.hypothesis}</SolutionNote>}<div className="body-copy"><Markdown>{section.body}</Markdown></div>{section.test && section.showTest !== false && <SolutionNote type="test">{section.test}</SolutionNote>}</div>{uploadedMedia}</div>;
 }
 
 function CaseContent({ project }: { project: PortfolioCase }) {
@@ -191,6 +193,7 @@ function CaseContent({ project }: { project: PortfolioCase }) {
     const body = <div className="body-copy"><Markdown>{section.body}</Markdown></div>;
     if (section.type === 'solution') return <Solution key={index} section={section} />;
     if (section.type === 'image') return <section className="case-section case-image-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.image && <img src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
+    if (section.type === 'gallery') return <section className={`case-section case-media-gallery case-media-${section.mediaMode || 'photo'}`} key={index}>{section.heading && <h2>{section.heading}</h2>}{section.items?.map((item, mediaIndex) => <figure key={`${item.image}-${mediaIndex}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</section>;
     if (section.type === 'result') return <section className="case-section case-result" key={index}><h2>{section.heading}</h2>{section.image && <img className="result-overview" src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
     if (section.type === 'context') return <section className="case-section context-section" key={index}><div><h2>{section.heading}</h2>{body}</div>{section.image ? <img className="case-context-image" src={media(section.image)} alt="" loading="lazy" /> : project.slides?.length || project.layout === 'savings' ? <ImageSlider project={project} /> : null}</section>;
     return <section className="case-section text-section" key={index}><h2>{section.heading}</h2>{section.callout && <p className="callout"><span>☝️</span>{section.callout}</p>}{body}{section.image && <img className="case-section-image" src={media(section.image)} alt="" loading="lazy" />}</section>;
@@ -218,7 +221,7 @@ function CaseContent({ project }: { project: PortfolioCase }) {
     </header>
     {project.hero ? <div className="hero-cover case-uploaded-hero"><img src={media(project.hero)} alt="" /></div> : project.layout === 'savings' ? <HeroCover /> : null}
     {sections}
-    {project.updated && <p className="case-updated eyebrow">Обновлено {project.updated}</p>}
+    {projectUpdated[project.id] && <p className="case-updated eyebrow">Обновлено {new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Volgograd' }).format(new Date(projectUpdated[project.id]))}</p>}
   </article>;
 }
 
