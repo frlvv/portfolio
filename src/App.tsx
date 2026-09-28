@@ -5,10 +5,11 @@ import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, 
 import { Dialog } from '@base-ui/react/dialog';
 import Lenis from 'lenis';
 import { TextMorph } from 'torph/react';
+import Markdown from 'react-markdown';
+import { cases, media, profileContent, type PortfolioCase, type CaseSection } from './content';
 
 const asset = (name: string) => `${import.meta.env.BASE_URL}assets/${name}`;
 const imageDimensions: Record<string, { width: number; height: number }> = {"hero-hub.png": {"width": 2144, "height": 2144}, "type-goal.png": {"width": 2144, "height": 2144}, "amount.png": {"width": 2144, "height": 2144}, "plan.png": {"width": 2144, "height": 2144}, "no-plan.png": {"width": 2144, "height": 2144}, "screen-goal.png": {"width": 2144, "height": 2144}, "plan-overview.png": {"width": 2144, "height": 2144}, "plan-adjust.png": {"width": 2144, "height": 2144}, "quick-amount.png": {"width": 2144, "height": 2144}, "quick-plan.png": {"width": 2144, "height": 2144}, "quick-hold.png": {"width": 2144, "height": 2144}, "current-home.png": {"width": 828, "height": 1792}, "current-account.png": {"width": 828, "height": 1792}};
-const caseTitle = 'Переосмысление опыта накопления в Т-Банке';
 
 function useSmoothScroll(blocked = false, wrapper?: React.RefObject<HTMLDivElement | null>, content?: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
@@ -33,7 +34,7 @@ function BlurText({ text, visible }: { text: string; visible: boolean }) {
   return <span className="blur-text" data-visible={visible} aria-hidden={!visible}>{[...text].map((letter, index) => <span className="blur-letter" style={{ '--letter-index': index } as CSSProperties} key={index}><TextMorph duration={180} numbers={false}>{letter === ' ' ? '\u00a0' : letter}</TextMorph></span>)}</span>;
 }
 
-function PendingProjectCard() {
+function PendingProjectCard({ project }: { project: PortfolioCase }) {
   const [active, setActive] = useState(false);
   return <button className="project-card project-pending" onMouseEnter={() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) setActive(true); }} onMouseLeave={() => setActive(false)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setActive(true); }} onBlur={() => setActive(false)} onClick={event => {
     const card = event.currentTarget;
@@ -42,13 +43,13 @@ function PendingProjectCard() {
     card.classList.add('is-denied');
   }} onAnimationEnd={event => event.currentTarget.classList.remove('is-denied')}>
     <span className={`pending-visual${active ? ' is-active' : ''}`}>
-      <img className="pending-cover" src={asset('capsule-case-hq.png')} alt="" draggable="false" />
+      {project.cover && <img className="pending-cover" src={media(project.cover)} alt="" draggable="false" />}
       <span className="pending-status" aria-hidden="true">
         <span className="pending-lock-track"><img className="pending-lock" src={asset('lock.svg')} alt="" draggable="false" /></span>
         <span className="pending-status-text"><BlurText text="Кейс в разработке" visible={active} /></span>
       </span>
     </span>
-    <span className="project-title">Капсула для отправки сообщения себе в будущее</span>
+    <span className="project-title">{project.title}</span>
   </button>;
 }
 
@@ -96,7 +97,9 @@ const visualPhones: Record<VisualKind, string[]> = {
   hub: ['hero-hub.png'], type: ['type-goal.png'], plan: ['amount.png', 'plan.png', 'no-plan.png'], goal: ['screen-goal.png'], change: ['plan-overview.png', 'plan-adjust.png'], quick: ['quick-amount.png', 'quick-plan.png', 'quick-hold.png'],
 };
 
-function CaseVisual({ kind }: { kind: VisualKind }) {
+function CaseVisual({ kind, image }: { kind?: VisualKind; image?: string }) {
+  if (image) return <div className="case-visual case-uploaded-visual"><img src={media(image)} alt="" draggable="false" loading="lazy" /></div>;
+  if (!kind) return null;
   if (kind === 'type') return <div className="case-visual visual-type-original"><img className="visual-background" src={asset('case-bg.png')} width={1254} height={1254} alt="" draggable="false" loading="lazy" /><div className="visual-type-phone"><img className="visual-composite" src={asset('type-goal-original.png')} width={876} height={1810} alt="Четыре типа копилки" draggable="false" loading="lazy" /></div></div>;
   return <div className={`case-visual visual-${kind}`}>
     <img className="visual-background" src={asset('case-bg.png')} width={1254} height={1254} alt="" draggable="false" loading="lazy" />
@@ -128,11 +131,11 @@ function ContactContent() {
   </>;
 }
 
-function ImageSlider() {
+function ImageSlider({ project }: { project: PortfolioCase }) {
   const [active, setActive] = useState(0);
   const pointer = useRef<{ id: number; x: number; y: number; target: number | null } | null>(null);
   const suppressClick = useRef(false);
-  const items = [{ file: 'current-home.png', alt: 'Главная Т-Банка со счетами' }, { file: 'current-account.png', alt: 'Экран накопительного счёта' }];
+  const items = project.slides?.length ? project.slides.map(slide => ({ file: slide.image, alt: slide.label || '' })) : [{ file: 'assets/current-home.png', alt: 'Главная Т-Банка со счетами' }, { file: 'assets/current-account.png', alt: 'Экран накопительного счёта' }];
   const change = (index: number) => setActive((index + items.length) % items.length);
   return <div className="image-slider" role="region" aria-label="Интерфейс до редизайна">
     <div className="image-stack" tabIndex={0} onKeyDown={event => {
@@ -165,7 +168,7 @@ function ImageSlider() {
     }} onPointerCancel={() => { pointer.current = null; }}>
       {items.map((item, index) => <button key={item.file} data-index={index} className={`stack-slide ${index === active ? 'is-front' : 'is-back'} ${index === 0 ? 'stack-home' : 'stack-account'}`} onClick={() => {
         if (suppressClick.current) { suppressClick.current = false; return; } change(index);
-      }} aria-label={item.alt} aria-current={index === active ? 'true' : undefined}><img src={asset(item.file)} {...imageDimensions[item.file]} alt="" draggable="false" loading="lazy" /></button>)}
+      }} aria-label={item.alt} aria-current={index === active ? 'true' : undefined}><img src={media(item.file)} {...imageDimensions[item.file.split('/').pop() || '']} alt="" draggable="false" loading="lazy" /></button>)}
       <button className={`back-photo-hit back-photo-hit-${active}`} onClick={() => {
         if (suppressClick.current) { suppressClick.current = false; return; }
         change(active + 1);
@@ -179,38 +182,49 @@ function SolutionNote({ type, children }: { type: 'hypothesis' | 'test'; childre
   return <div className={`solution-note solution-note-${type}`}><span className="solution-note-icon">{type === 'hypothesis' ? '💡' : '🔎'}</span><div><strong>{type === 'hypothesis' ? 'Гипотеза' : 'Что проверю на юзабилити-тесте'}</strong><p>{children}</p></div></div>;
 }
 
-function Solution({ title, kind, hypothesis, test, children }: { title: React.ReactNode; kind: VisualKind; hypothesis?: React.ReactNode; test?: React.ReactNode; children: React.ReactNode }) {
-  return <div className="solution-block"><div className="solution-copy"><h3>{title}</h3>{hypothesis && <SolutionNote type="hypothesis">{hypothesis}</SolutionNote>}<div className="body-copy">{children}</div>{test && <SolutionNote type="test">{test}</SolutionNote>}</div><CaseVisual kind={kind} /></div>;
+function Solution({ section }: { section: CaseSection }) {
+  return <div className="solution-block"><div className="solution-copy"><h3>{section.heading}</h3>{section.hypothesis && <SolutionNote type="hypothesis">{section.hypothesis}</SolutionNote>}<div className="body-copy"><Markdown>{section.body}</Markdown></div>{section.test && <SolutionNote type="test">{section.test}</SolutionNote>}</div><CaseVisual kind={section.visual} image={section.image} /></div>;
 }
 
-function CaseContent() {
+function CaseContent({ project }: { project: PortfolioCase }) {
+  const renderSection = (section: CaseSection, index: number) => {
+    const body = <div className="body-copy"><Markdown>{section.body}</Markdown></div>;
+    if (section.type === 'solution') return <Solution key={index} section={section} />;
+    if (section.type === 'image') return <section className="case-section case-image-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.image && <img src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
+    if (section.type === 'result') return <section className="case-section case-result" key={index}><h2>{section.heading}</h2>{section.image && <img className="result-overview" src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
+    if (section.type === 'context') return <section className="case-section context-section" key={index}><div><h2>{section.heading}</h2>{body}</div>{section.image ? <img className="case-context-image" src={media(section.image)} alt="" loading="lazy" /> : project.slides?.length || project.layout === 'savings' ? <ImageSlider project={project} /> : null}</section>;
+    return <section className="case-section text-section" key={index}><h2>{section.heading}</h2>{section.callout && <p className="callout"><span>☝️</span>{section.callout}</p>}{body}{section.image && <img className="case-section-image" src={media(section.image)} alt="" loading="lazy" />}</section>;
+  };
+  const sections: React.ReactNode[] = [];
+  for (let index = 0; index < (project.sections?.length ?? 0); index++) {
+    const section = project.sections[index];
+    if (section.type !== 'solution') {
+      sections.push(renderSection(section, index));
+      continue;
+    }
+    const solutions: CaseSection[] = [];
+    while (project.sections[index]?.type === 'solution') {
+      solutions.push(project.sections[index]);
+      index++;
+    }
+    sections.push(<section className="case-section solutions-section" key={`solutions-${index}`}><h2>Гипотезы и решения</h2>{solutions.map((item, offset) => <Solution key={offset} section={item} />)}</section>);
+    index--;
+  }
   return <article className="case-article">
     <header className="case-intro">
-      <Dialog.Title>Копилка Т-Банка</Dialog.Title>
-      <div className="case-about"><p className="eyebrow">О проекте</p><Dialog.Description className="body-copy">Копилка – это переосмысление опыта накоплений в приложении Т-Банка. В рамках кейса я разобрал текущий сценарий использования копилки, изучил пользовательские привычки и проблемы, сформулировал продуктовые гипотезы и на их основе спроектировал обновлённый флоу создания и управления накоплениями.</Dialog.Description></div>
-      <dl className="case-facts"><div><dt>Год</dt><dd>2026</dd></div><div><dt>Платформа</dt><dd>Mobile App, iOS</dd></div><div><dt>Роль в проекте</dt><dd>Product Design, UX/UI, Research, IA, Prototyping, Motion, Usability Testing</dd></div></dl>
+      <Dialog.Title>{project.heading || project.title}</Dialog.Title>
+      {project.about && <div className="case-about"><p className="eyebrow">О проекте</p><Dialog.Description className="body-copy">{project.about}</Dialog.Description></div>}
+      {(project.year || project.platform || project.role) && <dl className="case-facts">{project.year && <div><dt>Год</dt><dd>{project.year}</dd></div>}{project.platform && <div><dt>Платформа</dt><dd>{project.platform}</dd></div>}{project.role && <div><dt>Роль в проекте</dt><dd>{project.role}</dd></div>}</dl>}
     </header>
-    <HeroCover />
-    <section className="case-section text-section"><h2>Задача</h2><p className="callout"><span>☝️</span>Сделать накопления ближе к жизни человека</p><div className="body-copy"><p>Я интерпретировал данную задачу не только как визуальный апгрейд (сделать интерфейс чище и динамичнее), а в первую очередь через изменение продуктовой логики.</p><p>Накопления не всегда идут по первоначальному графику. Могут появиться срочные расходы, измениться доход или приоритеты. В таких ситуациях человеку нужен понятный способ продолжить.</p></div></section>
-    <section className="case-section context-section"><div><h2>Контекст</h2><div className="body-copy"><p>Сейчас сбережения в Т‑Банке работают через базовый накопительный счёт с начислением процентов на остаток. Счета отображаются общим списком на главном экране вперемешку с картами и другими продуктами.</p><p>Внутри счёта можно включить цель: указать итоговую сумму и дату. Интерфейс делит сумму на количество месяцев и показывает фиксированную цифру, которую нужно вносить каждый месяц. Пополнение работает стандартно — через открытие формы перевода и ручной ввод любой суммы.</p><p>Что сейчас не очень:</p><ul><li>Если пропустить пополнение или внести меньше, система не пересчитывает план, срок остаётся прежним.</li><li>Если забрать часть денег на срочные траты, прогресс-бар откатывается назад, а график не адаптируется.</li><li>Все счета выглядят одинаково. Нельзя наглядно разделить финансовую подушку, накопления на отпуск и резерв под регулярные платежи — налоги или страховку.</li><li>Чтобы закрыть норму месяца, пользователю нужно самому помнить сумму платежа и вбивать её вручную.</li></ul></div></div><ImageSlider /></section>
-    <section className="case-section text-section"><h2>Исследование</h2><div className="body-copy"><p>Я начал с изучения материалов о накопительном поведении и разбора сценариев: накопление на покупку, подготовка к платежу, создание финансовой подушки, пропуски пополнений и снятие денег.</p><p>На основе этого выдвинул несколько рабочих проблем, которые впоследствии проверял через интервью.</p><p>В результате я выделил несколько инсайтов:</p><ul><li>люди используют копилки для разных задач — покупок, событий и финансового резерва;</li><li>сумму и дату часто задают от желаемого результата, не проверяя, какой регулярный взнос потребуется и подходит ли он текущему бюджету;</li><li>непредвиденные расходы меняют траекторию, но снятие не равно отказу от накопления. Люди используют накопленное в текущей жизненной ситуации и способны возвращаться к цели;</li><li>для части людей срок — больше ориентир, чем обязательство. Пропуск пополнения или перенос даты не воспринимается как провал, пока цель остаётся актуальной;</li><li>само отставание от цели не всегда означает отказ от накопления. Люди не понимают, как продолжить копить после нескольких пропущенных месяцев, и забрасывают цель, хотя она может оставаться актуальной.</li></ul></div></section>
-    <section className="case-section solutions-section"><h2>Гипотезы и решения</h2>
-      <Solution title="Все копилки теперь в одном месте" kind="hub"><p>Экран собирает все сбережения в одном месте и раскладывает их по задачам вместо плоского списка счетов.</p><p>Сверху отображается общий баланс и карточка с быстрыми инсайтами — доходом за месяц, серией пополнений и советами. Этот блок служит точкой входа в подробный дашборд со статистикой по всем накоплениям.</p></Solution>
-      <Solution title="Выбор типа копилки" kind="type"><p>Создание копилки начинается с выбора направления: «Цель», «Подушка», «Платёж» или «Просто копить». Под каждым пунктом есть короткая подсказка, которая сразу объясняет суть формата.</p><p>Категория определяет логику дальнейшего сценария. Для «Цели» главное — итоговая стоимость покупки или отпуска. Для «Подушки» система формирует резерв на несколько месяцев и может сама рассчитать нужную сумму по истории трат клиента. «Платёж» привязывается к дате, чтобы вовремя закрыть крупные повторяющиеся расходы вроде учёбы, налогов или страховки, а «Просто копить» даёт возможность откладывать деньги без сроков и ограничений.</p><p>В проекте подробно спроектирован сценарий «Цель» как самый массовый запрос пользователя. Механики для подушки безопасности, регулярных платежей и свободных накоплений находятся в активной проработке.</p></Solution>
-      <Solution title="Настройка суммы и плана" kind="plan" hypothesis="Если сразу показывать связь между суммой цели, ежемесячным взносом и сроком, человеку будет проще подобрать план под свой бюджет." test="Сможет ли человек настроить план под ограничение по ежемесячному взносу и объяснить, как изменился срок накопления. Это поможет понять, достаточно ли наглядно показана связь между параметрами."><p>После ввода суммы система сразу рассчитывает ежемесячный платёж и срок цели. Параметры связаны между собой: если изменить комфортную сумму в месяц, автоматически пересчитается дата, и наоборот. Это помогает заранее «примерить» нагрузку и найти нужный баланс.</p><p>Если у банка достаточно данных о доходах и расходах, интерфейс оценивает реалистичность плана — показывает нагрузку на бюджет, долю от свободных средств и подсказывает, насколько легко или тяжело будет удерживать выбранный темп. Если истории трат нет, система показывает нейтральный расчёт.</p><p>Пользователь не обязан настраивать план и может отключить его.</p></Solution>
-      <Solution title="Экран копилки" kind="goal"><p>Экран копилки связывает эмоциональный образ цели с контролем плана.</p><p>В шапке находится текущий баланс, визуализация цели и общая строка прогресса: сколько осталось накопить и к какой дате.</p><p>Ниже идут стандартные блоки: операции и доход от копилки.</p><p>Блок «План накопления» показывает выполнение нормы за текущий месяц и позволяет быстро изменить параметры цели или адаптировать график при отставании.</p></Solution>
-      <Solution title="Просмотр и изменение плана" kind="change" hypothesis="Если при отставании предложить несколько способов продолжить накопление и сразу показать последствия каждого, человеку будет проще выбрать подходящий вариант без самостоятельного пересчёта." test="Найдёт ли человек пересмотр плана, сможет ли выбрать вариант под свою ситуацию и до подтверждения назвать новый взнос и срок. Так я смогу понять, где возникают затруднения: при поиске действия, выборе варианта или понимании новых условий."><p>С экрана копилки пользователь открывает модалку «План накопления», где видит текущие условия.</p><p>Отсюда можно изменить параметры, а при отставании — адаптировать план: сохранить дату, увеличив взнос, или откладывать привычную сумму дольше.</p><p>Также можно поставить план на паузу, чтобы временно не следовать графику. Копилка остаётся доступной. Пользователь может пополнять её, когда захочет, без необходимости вносить запланированную сумму каждый месяц.</p></Solution>
-      <Solution title={<>Быстрое пополнение <span>(эксперимент)</span></>} kind="quick" hypothesis="Если предложить суммы пополнения, связанные с планом накопления, человек сможет выбрать нужный взнос без ручного расчёта и ввода." test="Сможет ли человек выбрать сумму для выполнения плана текущего месяца и до перевода объяснить, сколько денег спишется и с какой карты. Отдельно проверю, понятно ли подтверждение удержанием. Снижение случайных подтверждений и сохранение скорости пока остаются предположениями."><p>Вместо стандартного сценария пополнения счёта я сделал экспериментальный вариант быстрого пополнения, чтобы сделать однотипные переводы проще и быстрее.</p><p>Пользователь переключает ползунок между ключевыми отметками: закрыть остаток на текущий месяц, закрыть план на два месяца или внести минимальную сумму. Интерфейс сразу меняет сумму перевода и объясняет результат действия.</p><ul><li>Карта, с которой будет пополняться копилка, видна сразу над суммой и меняется в один тап без перехода на отдельный экран.</li><li>Действие подтверждается удержанием кнопки «Пополнить». Это исключает случайный миссклик, но сохраняет скорость перевода без лишних шагов.</li><li>Снизу оставлена кнопка «Другая сумма» для тех, кому нужно внести произвольную цифру.</li></ul></Solution>
-    </section>
-    <section className="case-section text-section"><h2>Тестирование юзабилити</h2><div className="body-copy"><p>На данном этапе тестирование только планируется.</p><p>Примерные задания:</p><ul><li><strong>First click test</strong> — показать экран копилки и предложить ситуацию: «Вы пропустили несколько пополнений и теперь хотите пересмотреть срок накопления. Куда бы вы нажали?» Проверить, помогает ли интерфейс найти действие с первой попытки.</li><li><strong>Goal based prototype test</strong> — предложить создать копилку на путешествие, указать сумму и подобрать комфортный ежемесячный взнос. Затем изменить условия: «В этом месяце не получилось отложить деньги. Вы хотите продолжить копить ту же сумму, но готовы перенести дату». Посмотреть, сможет ли человек самостоятельно изменить план и пополнить копилку на оставшуюся сумму за текущий месяц.</li><li><strong>Пятисекундный тест</strong> — показать экран копилки на пять секунд, затем скрыть его и спросить, что пользователь запомнил и как понял назначение экрана. Проверить, какие элементы привлекают внимание и считывается ли ключевая информация о цели.</li></ul></div></section>
-    <section className="case-section case-result"><h2>Что в итоге</h2><img className="result-overview" src={asset('savings-flow.png')} alt="Схема экранов и переходов копилки в Figma" width="2048" height="1168" draggable="false" loading="lazy" /><div className="body-copy text-section"><p>Я проработал основной сценарий копилки целиком: от создания цели и выбора плана накоплений до отслеживания прогресса, изменения условий и снятия денег.</p><p>В обновлённом сценарии пользователь может подобрать комфортный взнос, скорректировать план, если начал отставать от цели, или поставить его на паузу, продолжая пополнять копилку в удобном для себя темпе.</p><p>Чтобы проверить решения не только в статичных макетах, я также собрал с помощью Codex рабочий прототип iOS-приложения в Xcode. Он позволяет протестировать основные интерфейсы и взаимодействия непосредственно на устройстве.</p><p>Проект ещё находится в разработке. Следующий этап — провести тестирование юзабилити и скорректировать решения по его результатам. В дальнейшем я планирую развить отдельные сценарии для финансовой подушки, обязательных платежей и свободных накоплений, а также проработать закрытие копилки и распределение оставшихся средств между другими целями.</p></div></section>
-    <p className="case-updated eyebrow">Обновлено 11 сентября 2026, 17:40</p>
+    {project.hero ? <div className="hero-cover case-uploaded-hero"><img src={media(project.hero)} alt="" /></div> : project.layout === 'savings' ? <HeroCover /> : null}
+    {sections}
+    {project.updated && <p className="case-updated eyebrow">Обновлено {project.updated}</p>}
   </article>;
 }
 
 type SheetDrag = { source: 'touch' | 'pointer'; id: number; x: number; y: number; lastY: number; lastTime: number; velocity: number; committed: boolean };
 
-function CaseViewport({ onClose }: { onClose: () => void }) {
+function CaseViewport({ onClose, project }: { onClose: () => void; project: PortfolioCase }) {
   const wrapper = useRef<HTMLDivElement>(null), content = useRef<HTMLDivElement>(null), popup = useRef<HTMLDivElement>(null);
   const drag = useRef<SheetDrag | null>(null);
   const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [showTop, setShowTop] = useState(false);
@@ -332,12 +346,13 @@ function CaseViewport({ onClose }: { onClose: () => void }) {
       setDragY(Math.max(0, dy));
     }} onPointerUp={event => { if (drag.current?.source === 'pointer') release(event.clientY); }} onPointerCancel={() => { if (drag.current?.source === 'pointer') release(drag.current.lastY, true); }}>
     <div className="case-swipe-zone"><span /></div>
-    <Dialog.Close className="case-close" aria-label="Закрыть" onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); onClose(); }}><Icon name="case-close" size={40} /></Dialog.Close><CaseContent />
+    <Dialog.Close className="case-close" aria-label="Закрыть" onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); onClose(); }}><Icon name="case-close" size={40} /></Dialog.Close><CaseContent project={project} />
   </Dialog.Popup><button className={`case-top${showTop ? ' is-visible' : ''}`} onClick={scrollToTop} aria-label="Вверх">↑</button></div></Dialog.Viewport>;
 }
 
 export default function App() {
   const [contactOpen, setContactOpen] = useState(false), [caseOpen, setCaseOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<PortfolioCase>(cases.find(project => project.status === 'published') ?? cases[0]);
   const pageScroll = useRef(0);
   useSmoothScroll(contactOpen || caseOpen);
   useEffect(() => {
@@ -377,10 +392,10 @@ export default function App() {
     if (matchMedia('(max-width:700px)').matches) window.scrollTo({ top: pageScroll.current, behavior: 'instant' });
   };
   return <><main className="portfolio-layout" data-case-open={caseOpen}>
-    <aside className="profile"><Portrait blocked={caseOpen || contactOpen} /><div className="profile-block"><p className="eyebrow">Влад Фролов</p><h1>Продуктовый дизайнер</h1></div><div className="profile-block"><p className="eyebrow">Опыт</p><p>Проектирую мобильные приложения, Telegram Mini Apps и&nbsp;игровые лаунчеры на&nbsp;фрилансе, в&nbsp;том числе для&nbsp;постоянных клиентов.<br />Работал над&nbsp;внутренним сервисом учёта нагрузки сотрудников и&nbsp;затрат по&nbsp;проектам во&nbsp;время стажировки.</p></div><div className="profile-block"><p className="eyebrow">Скиллы</p><p>research, user flows, wireframing, prototyping, usability testing, design systems, edge cases, animation, lottie, handoff, design review</p></div><div className="profile-actions">
+    <aside className="profile"><Portrait blocked={caseOpen || contactOpen} /><div className="profile-block"><p className="eyebrow">{profileContent.name}</p><h1>{profileContent.role}</h1></div>{profileContent.sections.map((section, index) => <div className="profile-block" key={index}><p className="eyebrow">{section.label}</p><p className="profile-section-text">{section.text}</p></div>)}<div className="profile-actions">
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}CV_Vlad_Frolov_Product_Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus"><Dialog.Trigger className="project-card project-animated" aria-label={caseTitle}><Cover /><span className="project-title">{caseTitle}</span></Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root><PendingProjectCard /></section>
+    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus">{cases.map(project => project.status === 'pending' ? <PendingProjectCard key={project.id} project={project} /> : <Dialog.Trigger key={project.id} className={`project-card${project.layout === 'savings' && !project.cover ? ' project-animated' : ''}`} aria-label={project.title} onClick={() => setSelectedCase(project)}>{project.cover ? <div className="cover case-static-cover"><img src={media(project.cover)} alt="" draggable="false" /></div> : project.layout === 'savings' ? <Cover /> : <div className="cover case-empty-cover" />}<span className="project-title">{project.title}</span></Dialog.Trigger>)}<Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport project={selectedCase} onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root></section>
   </main></>;
 }

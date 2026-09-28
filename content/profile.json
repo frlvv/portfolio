@@ -1,0 +1,14 @@
+{
+  "name": "Влад Фролов",
+  "role": "Продуктовый дизайнер",
+  "sections": [
+    {
+      "label": "Опыт",
+      "text": "Проектирую мобильные приложения, Telegram Mini Apps и игровые лаунчеры на фрилансе, в том числе для постоянных клиентов.\nРаботал над внутренним сервисом учёта нагрузки сотрудников и затрат по проектам во время стажировки."
+    },
+    {
+      "label": "Скиллы",
+      "text": "research, user flows, wireframing, prototyping, usability testing, design systems, edge cases, animation, lottie, handoff, design review"
+    }
+  ]
+}

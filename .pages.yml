@@ -1,0 +1,189 @@
+media:
+  input: public/assets
+  output: /portfolio/assets
+  rename: safe
+  extensions: [png, jpg, jpeg, webp, avif, gif, svg, mp4, webm]
+content:
+  - name: profile
+    label: Профиль
+    type: file
+    path: content/profile.json
+    format: json
+    operations:
+      delete: false
+    fields:
+      - name: name
+        label: Имя
+        type: string
+        required: true
+      - name: role
+        label: Профессия
+        type: string
+        required: true
+      - name: sections
+        label: Блоки под именем
+        type: object
+        list: true
+        fields:
+          - name: label
+            label: Заголовок
+            type: string
+            required: true
+          - name: text
+            label: Текст
+            type: text
+            required: true
+  - name: cases
+    label: Кейсы
+    type: collection
+    path: content/cases
+    format: json
+    filename: "{primary}.json"
+    view:
+      primary: title
+      sort: order
+      order: asc
+    operations:
+      rename: false
+    fields:
+      - name: title
+        label: Название карточки
+        type: string
+        required: true
+      - name: heading
+        label: Заголовок внутри кейса
+        type: string
+        required: true
+      - name: status
+        label: Публикация
+        type: select
+        options:
+          values:
+            - name: published
+              label: Открывается по нажатию
+            - name: pending
+              label: Скоро — с замком
+      - name: order
+        label: Порядок на главной
+        type: number
+      - name: layout
+        label: Оформление обложки
+        type: select
+        options:
+          values:
+            - name: standard
+              label: Фото
+            - name: savings
+              label: Анимированные телефоны
+      - name: cover
+        label: Обложка карточки
+        type: image
+      - name: hero
+        label: Большое фото в кейсе
+        type: image
+      - name: about
+        label: О проекте
+        type: text
+      - name: year
+        label: Год
+        type: string
+      - name: platform
+        label: Платформа
+        type: string
+      - name: role
+        label: Роль
+        type: text
+      - name: updated
+        label: Когда обновлён
+        type: string
+      - name: slides
+        label: Фото в слайдере «Контекст»
+        type: object
+        list: true
+        fields:
+          - name: image
+            label: Фото
+            type: image
+          - name: label
+            label: Описание
+            type: string
+      - name: sections
+        label: Содержание кейса
+        type: block
+        list: true
+        blockKey: type
+        blocks:
+          - name: text
+            label: Текст
+            fields:
+              - name: heading
+                label: Заголовок
+                type: string
+              - name: callout
+                label: Выделенная строка
+                type: string
+              - name: body
+                label: Текст
+                type: rich-text
+              - name: image
+                label: Фото после текста
+                type: image
+          - name: context
+            label: Контекст со слайдером
+            fields:
+              - name: heading
+                label: Заголовок
+                type: string
+              - name: body
+                label: Текст
+                type: rich-text
+              - name: image
+                label: Фото вместо слайдера
+                type: image
+          - name: solution
+            label: Гипотеза и решение
+            fields:
+              - name: heading
+                label: Заголовок
+                type: string
+              - name: hypothesis
+                label: Гипотеза
+                type: text
+              - name: body
+                label: Решение
+                type: rich-text
+              - name: test
+                label: Что проверить
+                type: text
+              - name: visual
+                label: Готовый мокап
+                type: select
+                options:
+                  values: [hub, type, plan, goal, change, quick]
+              - name: image
+                label: Своя картинка вместо мокапа
+                type: image
+          - name: image
+            label: Фото
+            fields:
+              - name: heading
+                label: Заголовок
+                type: string
+              - name: image
+                label: Картинка
+                type: image
+              - name: body
+                label: Подпись
+                type: rich-text
+          - name: result
+            label: Итог
+            fields:
+              - name: heading
+                label: Заголовок
+                type: string
+              - name: image
+                label: Картинка
+                type: image
+              - name: body
+                label: Текст
+                type: rich-text
