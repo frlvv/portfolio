@@ -1,5 +1,7 @@
 import { motion, useMotionTemplate, useSpring } from 'motion/react';
 import GradientBackground from './GradientBackground';
+import CaseMedia from './CaseMedia';
+import type { MediaSpec } from './mediaTypes';
 import Portrait from './Portrait';
 import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
@@ -43,7 +45,7 @@ function PendingProjectCard({ project }: { project: PortfolioCase }) {
     card.classList.add('is-denied');
   }} onAnimationEnd={event => event.currentTarget.classList.remove('is-denied')}>
     <span className={`pending-visual${active ? ' is-active' : ''}`}>
-      {project.cover && <img className="pending-cover" src={media(project.cover)} alt="" draggable="false" />}
+      {project.coverMedia ? <CaseMedia value={project.coverMedia} layout="cover" active={active} /> : project.cover && <img className="pending-cover" src={media(project.cover)} alt="" draggable="false" />}
       <span className="pending-status" aria-hidden="true">
         <span className="pending-lock-track"><img className="pending-lock" src={asset('lock.svg')} alt="" draggable="false" /></span>
         <span className="pending-status-text"><BlurText text="Кейс в разработке" visible={active} /></span>
@@ -90,6 +92,11 @@ function HeroCover() {
     <PhoneMockup screen="hub" className="hero-phone hero-phone-first layered-phone" />
     <PhoneMockup screen="goal" className="hero-phone hero-phone-second layered-phone" />
   </div>;
+}
+
+function EditedCover({ value }: { value: MediaSpec }) {
+  const [active, setActive] = useState(false);
+  return <div className="cover-interaction" onPointerEnter={event => { if (event.pointerType === 'mouse') setActive(true); }} onPointerLeave={() => setActive(false)}><CaseMedia value={value} layout="cover" active={active} /></div>;
 }
 
 type VisualKind = 'hub' | 'type' | 'plan' | 'goal' | 'change' | 'quick';
@@ -184,14 +191,16 @@ function SolutionNote({ type, children }: { type: 'hypothesis' | 'test'; childre
 }
 
 function Solution({ section }: { section: CaseSection }) {
-  const uploadedMedia = section.items?.length ? <div className={`solution-media-gallery case-media-${section.mediaMode || 'photo'}`}>{section.items.map((item, index) => <figure key={`${item.image}-${index}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</div> : <CaseVisual kind={section.visual} image={section.image} />;
+  const uploadedMedia = section.showMedia === false ? null : section.media ? <CaseMedia value={section.media} /> : section.items?.length ? <div className={`solution-media-gallery case-media-${section.mediaMode || 'photo'}`}>{section.items.map((item, index) => <figure key={`${item.image}-${index}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</div> : <CaseVisual kind={section.visual} image={section.image} />;
   return <div className="solution-block"><div className="solution-copy"><h3>{section.heading}</h3>{section.hypothesis && section.showHypothesis !== false && <SolutionNote type="hypothesis">{section.hypothesis}</SolutionNote>}<div className="body-copy"><Markdown>{section.body}</Markdown></div>{section.test && section.showTest !== false && <SolutionNote type="test">{section.test}</SolutionNote>}</div>{uploadedMedia}</div>;
 }
 
 function CaseContent({ project }: { project: PortfolioCase }) {
+  const visibleSections = project.sections?.filter(section => section.enabled !== false) ?? [];
   const renderSection = (section: CaseSection, index: number) => {
     const body = <div className="body-copy"><Markdown>{section.body}</Markdown></div>;
     if (section.type === 'solution') return <Solution key={index} section={section} />;
+    if (section.media || section.showMedia === false) return <section className="case-section case-edited-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.callout && <p className="callout"><span>☝️</span>{section.callout}</p>}{body}{section.media && section.showMedia !== false && <CaseMedia value={section.media} />}</section>;
     if (section.type === 'image') return <section className="case-section case-image-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.image && <img src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
     if (section.type === 'gallery') return <section className={`case-section case-media-gallery case-media-${section.mediaMode || 'photo'}`} key={index}>{section.heading && <h2>{section.heading}</h2>}{section.items?.map((item, mediaIndex) => <figure key={`${item.image}-${mediaIndex}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</section>;
     if (section.type === 'result') return <section className="case-section case-result" key={index}><h2>{section.heading}</h2>{section.image && <img className="result-overview" src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
@@ -199,15 +208,15 @@ function CaseContent({ project }: { project: PortfolioCase }) {
     return <section className="case-section text-section" key={index}><h2>{section.heading}</h2>{section.callout && <p className="callout"><span>☝️</span>{section.callout}</p>}{body}{section.image && <img className="case-section-image" src={media(section.image)} alt="" loading="lazy" />}</section>;
   };
   const sections: React.ReactNode[] = [];
-  for (let index = 0; index < (project.sections?.length ?? 0); index++) {
-    const section = project.sections[index];
+  for (let index = 0; index < visibleSections.length; index++) {
+    const section = visibleSections[index];
     if (section.type !== 'solution') {
       sections.push(renderSection(section, index));
       continue;
     }
     const solutions: CaseSection[] = [];
-    while (project.sections[index]?.type === 'solution') {
-      solutions.push(project.sections[index]);
+    while (visibleSections[index]?.type === 'solution') {
+      solutions.push(visibleSections[index]);
       index++;
     }
     sections.push(<section className="case-section solutions-section" key={`solutions-${index}`}><h2>Гипотезы и решения</h2>{solutions.map((item, offset) => <Solution key={offset} section={item} />)}</section>);
@@ -219,7 +228,7 @@ function CaseContent({ project }: { project: PortfolioCase }) {
       {project.about && <div className="case-about"><p className="eyebrow">О проекте</p><Dialog.Description className="body-copy">{project.about}</Dialog.Description></div>}
       {(project.year || project.platform || project.role) && <dl className="case-facts">{project.year && <div><dt>Год</dt><dd>{project.year}</dd></div>}{project.platform && <div><dt>Платформа</dt><dd>{project.platform}</dd></div>}{project.role && <div><dt>Роль в проекте</dt><dd>{project.role}</dd></div>}</dl>}
     </header>
-    {project.hero ? <div className="hero-cover case-uploaded-hero"><img src={media(project.hero)} alt="" /></div> : project.layout === 'savings' ? <HeroCover /> : null}
+    {project.heroMedia ? <CaseMedia value={project.heroMedia} /> : project.hero ? <div className="hero-cover case-uploaded-hero"><img src={media(project.hero)} alt="" /></div> : project.layout === 'savings' ? <HeroCover /> : null}
     {sections}
     {projectUpdated[project.id] && <p className="case-updated eyebrow">Обновлено {new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Volgograd' }).format(new Date(projectUpdated[project.id]))}</p>}
   </article>;
@@ -399,6 +408,6 @@ export default function App() {
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}CV_Vlad_Frolov_Product_Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus">{cases.map(project => project.status === 'pending' ? <PendingProjectCard key={project.id} project={project} /> : <Dialog.Trigger key={project.id} className={`project-card${project.layout === 'savings' && !project.cover ? ' project-animated' : ''}`} aria-label={project.title} onClick={() => setSelectedCase(project)}>{project.cover ? <div className="cover case-static-cover"><img src={media(project.cover)} alt="" draggable="false" /></div> : project.layout === 'savings' ? <Cover /> : <div className="cover case-empty-cover" />}<span className="project-title">{project.title}</span></Dialog.Trigger>)}<Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport project={selectedCase} onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root></section>
+    <section className="projects" id="work"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus">{cases.map(project => project.status === 'pending' ? <PendingProjectCard key={project.id} project={project} /> : <Dialog.Trigger key={project.id} className={`project-card${project.layout === 'savings' && !project.cover ? ' project-animated' : ''}`} aria-label={project.title} onClick={() => setSelectedCase(project)}>{project.coverMedia ? <EditedCover value={project.coverMedia} /> : project.cover ? <div className="cover case-static-cover"><img src={media(project.cover)} alt="" draggable="false" /></div> : project.layout === 'savings' ? <Cover /> : <div className="cover case-empty-cover" />}<span className="project-title">{project.title}</span></Dialog.Trigger>)}<Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport project={selectedCase} onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root></section>
   </main></>;
 }

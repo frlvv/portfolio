@@ -247,3 +247,4 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 .body-copy img{display:block;max-width:100%;height:auto;border-radius:16px}
 .solution-note{background:color-mix(in srgb,var(--note-color) var(--note-opacity),transparent)}
 .solution-note-hypothesis strong,.solution-note-test strong{color:var(--note-color)}
+.case-edited-section>.body-copy{max-width:645px}.case-edited-section>.media-renderer{margin-top:24px}

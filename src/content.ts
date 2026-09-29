@@ -1,6 +1,8 @@
 import profile from '../content/profile.json';
 import calloutStyles from '../content/callouts.json';
 import updatedProjects from './generated/project-updated.json';
+import templates from '../content/mockups.json';
+import type { MediaSpec, MockupTemplate } from './mediaTypes';
 
 export type ProfileSection = { label: string; text: string };
 export type Profile = { name: string; role: string; sections: ProfileSection[] };
@@ -17,6 +19,9 @@ export type CaseSection = {
   showTest?: boolean;
   mediaMode?: 'photo' | 'mockup';
   items?: { image: string; label?: string }[];
+  media?: MediaSpec;
+  enabled?: boolean;
+  showMedia?: boolean;
 };
 export type PortfolioCase = {
   id: string;
@@ -27,6 +32,8 @@ export type PortfolioCase = {
   layout: 'savings' | 'standard';
   cover?: string;
   hero?: string;
+  coverMedia?: MediaSpec;
+  heroMedia?: MediaSpec;
   about?: string;
   year?: string;
   platform?: string;
@@ -41,6 +48,7 @@ export const solutionCallouts = calloutStyles as {
   test: { icon: string; title: string; color: string; backgroundOpacity: string };
 };
 export const projectUpdated = updatedProjects as Record<string, string>;
+export const mockupTemplates = templates as MockupTemplate[];
 
 const files = import.meta.glob('../content/cases/*.json', { eager: true, import: 'default' });
 export const cases = Object.entries(files)
@@ -50,5 +58,6 @@ export const cases = Object.entries(files)
 export const media = (path?: string) => {
   if (!path) return '';
   if (/^https?:\/\//.test(path)) return path;
+  if (/^(blob:|data:)/.test(path)) return path;
   return `${import.meta.env.BASE_URL}${path.replace(/^\/?(?:portfolio\/)?/, '')}`;
 };
