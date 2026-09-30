@@ -1,0 +1,30 @@
+[
+  {
+    "id": "iphone",
+    "name": "iPhone 18 Pro",
+    "frame": "assets/phone-frame.png",
+    "width": 450,
+    "height": 920,
+    "screenWidth": 804,
+    "screenHeight": 1748,
+    "insetX": 5.333333,
+    "insetY": 2.5,
+    "insetWidth": 89.333333,
+    "insetHeight": 95,
+    "radius": 14.255
+  },
+  {
+    "id": "none",
+    "name": "Без рамки",
+    "frame": "",
+    "width": 450,
+    "height": 920,
+    "screenWidth": 804,
+    "screenHeight": 1748,
+    "insetX": 0,
+    "insetY": 0,
+    "insetWidth": 100,
+    "insetHeight": 100,
+    "radius": 0
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "hypothesis": {
+    "icon": "💡",
+    "title": "Гипотеза",
+    "color": "#F9C02F",
+    "backgroundOpacity": "16%"
+  },
+  "test": {
+    "icon": "🔎",
+    "title": "Что проверю на юзабилити-тесте",
+    "color": "#8CB8FF",
+    "backgroundOpacity": "16%"
+  }
+}

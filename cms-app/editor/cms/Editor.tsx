@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 import Markdown from 'react-markdown';
@@ -6,7 +8,7 @@ import type { MediaSpec } from '../mediaTypes';
 import MediaEditor from './MediaEditor';
 import Mockups from './Mockups';
 import { CalloutSettings, ExtraNotes, Note, NotesEditor } from './Callouts';
-import { defaultMedia, emptyMedia, exportContent, initialState, loadState, resolveMedia, saveState, uid, type EditorCase, type EditorSection, type EditorState } from './storage';
+import { defaultMedia, emptyMedia, exportContent, initialState, loadState, resolveMedia, saveState, publishContent, uid, type EditorCase, type EditorSection, type EditorState } from './storage';
 import { CmsIcon, Field, InlineText, TextEditor, Toggle } from './ui';
 
 const visualImages = { hub: ['hero-hub.png'], type: ['type-goal-original.png'], plan: ['amount.png', 'plan.png', 'no-plan.png'], goal: ['screen-goal.png'], change: ['plan-overview.png', 'plan-adjust.png'], quick: ['quick-amount.png', 'quick-plan.png', 'quick-hold.png'] };
@@ -57,19 +59,22 @@ export default function Editor() {
   const [deleted, setDeleted] = useState<{ caseId: string; section: EditorSection; index: number }>();
   const [download, setDownload] = useState<{ url: string; filename: string }>();
   useEffect(() => () => { if (download) URL.revokeObjectURL(download.url); }, [download]);
-  const [saveTime, setSaveTime] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [saveTime, setSaveTime] = useState(''), [publishing, setPublishing] = useState(false);
+  const publish = async () => { setPublishing(true); try { await publishContent(state, view); setNotice('Сохранено в GitHub. Сайт обновляется.'); } catch (cause) { setNotice(cause instanceof Error ? cause.message : 'Не удалось сохранить.'); } finally { setPublishing(false); } };
+  const refresh = async () => { setPublishing(true); try { const latest = await loadState(true); const backup = await exportContent(state, 'all'); setDownload(backup); await saveState(latest); setState(latest); if (!['profile','mockups','callouts'].includes(view) && !latest.cases.some(item => item.id === view)) setView(latest.cases[0]?.id ?? 'profile'); setNotice('Загружена актуальная версия. Прежний черновик сохранён в ZIP.'); } catch (cause) { setNotice(cause instanceof Error ? cause.message : 'Не удалось обновить данные.'); } finally { setPublishing(false); } };
   const addButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let active = true;
-    void loadState().then(saved => { if (active && saved) { setState(saved); setView(saved.cases[0]?.id ?? 'profile'); } }).catch(() => { if (active) setNotice('Не удалось открыть черновик.'); }).finally(() => { if (active) setReady(true); });
+    void loadState().then(saved => { if (active && saved) { setState(saved); setView(saved.cases[0]?.id ?? 'profile'); } }).catch(error => { if (active) setLoadError(error instanceof Error ? error.message : 'Не удалось открыть редактор.'); }).finally(() => { if (active) setReady(true); });
     return () => { active = false; };
   }, []);
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || publishing) return;
     let active = true; setSaveStatus('saving');
     const timer = setTimeout(() => { void saveState(state).then(() => { if (active) { setSaveStatus('saved'); setSaveTime(new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })); } }).catch(() => { if (active) { setSaveStatus('error'); setNotice('Не удалось сохранить черновик. Можно скачать экспорт.'); } }); }, 500);
     return () => { active = false; clearTimeout(timer); };
-  }, [state, ready]);
+  }, [state, ready, publishing]);
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 6000); return () => clearTimeout(timer); }, [notice]);
   const project = state.cases.find(item => item.id === view);
   const updateProject = (patch: Partial<EditorCase>) => setState(current => ({ ...current, cases: current.cases.map(item => item.id === view ? { ...item, ...patch } : item) }));
@@ -94,10 +99,11 @@ export default function Editor() {
     setExporting(true);
     try { const file = await exportContent(state, view); setDownload(file); setNotice('Экспорт готов.'); } catch (cause) { setNotice(cause instanceof Error ? cause.message : 'Не удалось скачать экспорт.'); } finally { setExporting(false); }
   };
+  if (loadError) return <div className="cms-loading"><div><p>{loadError}</p><button className="cms-secondary-action" onClick={() => window.location.reload()}>Повторить</button><a className="site-link" href="/sign-in">Войти через GitHub</a></div></div>;
   if (!ready) return <div className="cms-loading">Открываю редактор…</div>;
-  return <div className={`cms-shell${navOpen ? ' nav-open' : ''}`}>
+  return <div inert={publishing} className={`cms-shell${navOpen ? ' nav-open' : ''}`}>
     <button className="mobile-nav-button" onClick={() => setNavOpen(!navOpen)} aria-label="Меню" aria-expanded={navOpen}>☰</button>
-    <aside className="cms-sidebar"><div className="cms-brand">Портфолио <span>/ CMS</span></div><nav aria-label="Редактор"><p className="nav-label">Кейсы</p>{state.cases.map(item => <button className={`nav-item${view === item.id ? ' is-active' : ''}`} key={item.id} onClick={() => selectView(item.id)}><span className={`case-dot${item.status === 'published' ? ' is-published' : ''}`} /><span>{item.heading || item.title}</span></button>)}<button className="nav-add" onClick={addCase}>+ Новый кейс</button><div className="nav-divider" />{[['profile', 'Профиль'], ['mockups', 'Мокапы'], ['callouts', 'Плашки']].map(([id, label]) => <button className={`nav-item${view === id ? ' is-active' : ''}`} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav><div className="sidebar-footer"><div className="draft-status" role="status"><span className={saveStatus === 'error' ? 'status-error' : ''}>{saveStatus === 'saving' ? 'Сохраняю…' : saveStatus === 'error' ? 'Не сохранено' : `Черновик сохранён${saveTime ? ` · ${saveTime}` : ''}`}</span><small>В этом браузере</small></div>{project && <Dialog.Root><Dialog.Trigger className="cms-primary-action">Предпросмотр</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="cms-dialog-backdrop" /><Dialog.Popup className="cms-preview-dialog"><div className="preview-bar"><Dialog.Title>Предпросмотр кейса</Dialog.Title><Dialog.Close aria-label="Закрыть">×</Dialog.Close></div><Dialog.Description className="visually-hidden">{project.heading}</Dialog.Description><Preview project={project} state={state} /></Dialog.Popup></Dialog.Portal></Dialog.Root>}<button className="cms-secondary-action" disabled={exporting} onClick={() => void exportDraft()}>{exporting ? 'Готовлю экспорт…' : 'Скачать экспорт'}</button>{download && <a className="site-link" href={download.url} download={download.filename}>Скачать готовый ZIP ↓</a>}<a className="site-link" href={import.meta.env.BASE_URL} target="_blank" rel="noreferrer">Открыть сайт ↗</a></div></aside>
+    <aside className="cms-sidebar"><div className="cms-brand">Портфолио <span>/ CMS</span></div><nav aria-label="Редактор"><p className="nav-label">Кейсы</p>{state.cases.map(item => <button className={`nav-item${view === item.id ? ' is-active' : ''}`} key={item.id} onClick={() => selectView(item.id)}><span className={`case-dot${item.status === 'published' ? ' is-published' : ''}`} /><span>{item.heading || item.title}</span></button>)}<button className="nav-add" onClick={addCase}>+ Новый кейс</button><div className="nav-divider" />{[['profile', 'Профиль'], ['mockups', 'Мокапы'], ['callouts', 'Плашки']].map(([id, label]) => <button className={`nav-item${view === id ? ' is-active' : ''}`} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav><div className="sidebar-footer"><div className="draft-status" role="status"><span className={saveStatus === 'error' ? 'status-error' : ''}>{saveStatus === 'saving' ? 'Сохраняю…' : saveStatus === 'error' ? 'Не сохранено' : `Черновик сохранён${saveTime ? ` · ${saveTime}` : ''}`}</span><small>Черновик в этом браузере</small></div>{project && <Dialog.Root><Dialog.Trigger className="cms-primary-action">Предпросмотр</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="cms-dialog-backdrop" /><Dialog.Popup className="cms-preview-dialog"><div className="preview-bar"><Dialog.Title>Предпросмотр кейса</Dialog.Title><Dialog.Close aria-label="Закрыть">×</Dialog.Close></div><Dialog.Description className="visually-hidden">{project.heading}</Dialog.Description><Preview project={project} state={state} /></Dialog.Popup></Dialog.Portal></Dialog.Root>}<button className="cms-primary-action" disabled={publishing} onClick={() => void publish()}>{publishing ? 'Сохраняю…' : 'Сохранить в GitHub'}</button><button className="cms-secondary-action" disabled={exporting} onClick={() => void exportDraft()}>{exporting ? 'Готовлю экспорт…' : 'Скачать экспорт'}</button>{download && <a className="site-link" href={download.url} download={download.filename}>Скачать готовый ZIP ↓</a>}<button className="site-link" disabled={publishing} onClick={() => void refresh()}>Обновить из GitHub</button><form action="/api/logout" method="post"><button type="submit" className="site-link" style={{width:'100%'}}>Выйти</button></form><a className="site-link" href="https://frlvv.github.io/portfolio/" target="_blank" rel="noreferrer">Открыть сайт ↗</a></div></aside>
     <main className="cms-workspace">{project ? <>
       <header className="case-editor-header"><div className="inline-title"><span className="title-size" aria-hidden="true">{project.title || 'Заголовок кейса'}</span><InlineText label="Заголовок кейса" heading value={project.title} onChange={title => updateProject({ title })} /><CmsIcon name="edit" /></div><Toggle label="Кейс опубликован" checked={project.status === 'published'} onChange={published => updateProject({ status: published ? 'published' : 'pending' })} /></header>
       <MediaEditor title="Обложка кейса" value={project.coverMedia} onChange={coverMedia => updateProject({ coverMedia })} templates={state.templates} layout="cover" />

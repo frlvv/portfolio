@@ -1,0 +1,17 @@
+.media-renderer{position:relative;isolation:isolate;overflow:hidden;width:100%;border-radius:20px;background:#1a1a1a;aspect-ratio:948/708}
+.media-renderer-cover{aspect-ratio:1;border-radius:24px}
+.media-renderer>img,.media-renderer>video,.media-renderer-background>img,.media-renderer-background>video{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}
+.media-renderer-background{position:absolute;inset:0}
+.media-renderer-grain{position:absolute;inset:0;pointer-events:none;opacity:.12;mix-blend-mode:soft-light;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23808080' filter='url(%23n)' d='M0 0h160v160H0z'/%3E%3C/svg%3E")}
+.media-renderer-phone{position:absolute;width:38.291%;top:17.938%;left:16.878%;overflow:hidden}
+.media-renderer-phone-2{top:10.169%;left:45.359%}
+.media-renderer-phone:only-of-type{left:30.854%}
+.media-renderer-cover .media-renderer-phone{width:51.5334%;left:5.9375%;top:18.4375%}
+.media-renderer-cover .media-renderer-phone-2{left:42.5%;top:10.9375%}
+.media-renderer-screen{position:absolute;left:var(--screen-left);top:var(--screen-top);width:var(--screen-width);height:var(--screen-height);border-radius:var(--screen-radius);overflow:hidden;background:#151515}
+.media-renderer-screen>img,.media-renderer-screen>video{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
+.media-renderer-frame{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none;user-select:none;object-fit:contain}
+.media-renderer-phone.is-frameless .media-renderer-screen{background:transparent}
+.media-renderer-phone.is-frameless .media-renderer-screen>img{object-fit:contain}
+.media-renderer-empty{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;color:#656565}
+@media(max-width:700px){.media-renderer{border-radius:16px}}
