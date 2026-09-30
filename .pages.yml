@@ -52,8 +52,9 @@ content:
             label: Заголовок
             type: string
           - name: color
-            label: Цвет заголовка
+            label: Цвет HEX
             type: string
+            pattern: "^#(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$"
           - name: backgroundOpacity
             label: Прозрачность фона, например 16%
             type: string
@@ -68,11 +69,40 @@ content:
             label: Заголовок
             type: string
           - name: color
-            label: Цвет заголовка
+            label: Цвет HEX
             type: string
+            pattern: "^#(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$"
           - name: backgroundOpacity
             label: Прозрачность фона, например 16%
             type: string
+      - name: custom
+        label: Свои шаблоны плашек
+        type: object
+        list:
+          collapsible:
+            summary: "{fields.title}"
+        fields:
+          - name: id
+            label: ID
+            type: uuid
+            readonly: true
+          - name: title
+            label: Заголовок
+            type: string
+            required: true
+          - name: icon
+            label: Иконка
+            type: string
+          - name: color
+            label: Цвет HEX
+            type: string
+            default: "#B69BFF"
+            pattern: "^#(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$"
+          - name: backgroundOpacity
+            label: Плотность фона
+            type: string
+            default: "16%"
+            pattern: "^(?:[0-9]|[1-9][0-9]|100)%$"
   - name: cases
     label: Кейсы
     type: collection

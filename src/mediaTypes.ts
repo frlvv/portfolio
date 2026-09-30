@@ -11,6 +11,7 @@ export type MockupTemplate = {
   id: string;
   name: string;
   frame: string;
+  device?: 'phone' | 'laptop' | 'tablet' | 'other';
   width: number;
   height: number;
   screenWidth: number;

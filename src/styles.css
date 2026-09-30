@@ -126,7 +126,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 .solution-copy .body-copy+.solution-note{margin-top:20px;margin-bottom:0}
 .solution-note-hypothesis{background:rgba(244,255,86,.16)}
 .solution-note-test{background:rgba(125,190,212,.16)}
-.solution-note-icon{flex:none;font-size:28px;line-height:36px}
+.solution-note-icon{display:grid;place-items:center;flex:none;width:28px;height:22px;margin-top:6px;font-size:24px;line-height:1}
 .solution-note>div{min-width:0;padding:6px 0;display:flex;flex-direction:column;gap:4px}
 .solution-note p{text-wrap:pretty;word-break:normal;overflow-wrap:normal;hyphens:none}
 .solution-note strong{font-weight:500}

@@ -3,6 +3,7 @@ import CaseMedia from '../CaseMedia';
 import type { MediaItem, MediaSpec, MockupTemplate } from '../mediaTypes';
 import { resolveMedia, storeFile, uid } from './storage';
 import { CmsIcon, Field, Segmented } from './ui';
+import { MockupPreview } from './Mockups';
 
 const modeOptions = [{ value: 'mockup', label: 'Мокапы' }, { value: 'photo', label: 'Дефолт фото' }, { value: 'video', label: 'Дефолт видео' }] as const;
 const motionOptions = [{ value: 'static', label: 'Статика' }, { value: 'animated', label: 'Анимация' }] as const;
@@ -28,7 +29,7 @@ function checkFiles(files: File[], video: boolean) {
 }
 
 export default function MediaEditor({ value, onChange, templates, title, layout = 'hero' }: { value: MediaSpec; onChange: (value: MediaSpec) => void; templates: MockupTemplate[]; title: string; layout?: 'cover' | 'hero' }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(true), [choosingTemplate, setChoosingTemplate] = useState(false);
   const group = useId();
   const template = templates.find(item => item.id === value.mockupId) ?? templates[0];
   const resize = (count: number) => onChange({ ...value, screens: Array.from({ length: count }, (_, index) => value.screens[index] ?? { id: uid(), src: '' }) });
@@ -49,7 +50,8 @@ export default function MediaEditor({ value, onChange, templates, title, layout 
   return <section className="cms-media-section"><div className="media-heading"><h3>{title}</h3><button className="quiet-button" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>{expanded ? 'Свернуть' : 'Развернуть'}</button></div>{expanded && <div className="media-editor-grid"><div className="media-controls">
     <Segmented label={`${title}: тип медиа`} value={value.mode} onChange={mode => onChange({ ...value, mode })} options={[...modeOptions]} />
     {value.mode === 'mockup' ? <>
-      <div className="mockup-config"><Field label="Кол-во мокапов"><div className="cms-stepper"><button disabled={value.screens.length <= 1} onClick={() => resize(value.screens.length - 1)} aria-label="Убрать мокап">−</button><span>{value.screens.length}</span><button disabled={value.screens.length >= 6} onClick={() => resize(value.screens.length + 1)} aria-label="Добавить мокап">+</button></div></Field><Field label="Мокап"><select aria-label="Модель мокапа" value={value.mockupId} onChange={event => onChange({ ...value, mockupId: event.target.value })}>{templates.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></Field></div>
+      <div className="mockup-config"><Field label="Кол-во мокапов"><div className="cms-stepper"><button disabled={value.screens.length <= 1} onClick={() => resize(value.screens.length - 1)} aria-label="Убрать мокап">−</button><span>{value.screens.length}</span><button disabled={value.screens.length >= 6} onClick={() => resize(value.screens.length + 1)} aria-label="Добавить мокап">+</button></div></Field><Field label="Мокап"><button type="button" className="mockup-select-button" aria-label="Модель мокапа" aria-expanded={choosingTemplate} onClick={() => setChoosingTemplate(!choosingTemplate)}>{template.name} <span>⌄</span></button></Field></div>
+      {choosingTemplate && <div className="mockup-template-picker" role="group" aria-label="Шаблоны мокапов">{templates.filter(item => item.frame || item.id === 'none').map(item => <button type="button" key={item.id} className={item.id === value.mockupId ? 'is-selected' : ''} aria-pressed={item.id === value.mockupId} onClick={() => { onChange({ ...value, mockupId: item.id }); setChoosingTemplate(false); }}><MockupPreview template={item} /><span>{item.name}</span></button>)}</div>}
       <Field label="Мокапы"><Segmented label="Анимация мокапов" value={value.motion} onChange={motion => onChange({ ...value, motion })} options={[...motionOptions]} /></Field>
       <div className="upload-thumbnails">{value.screens.some(item => item.src) && value.screens.map((item, index) => <div className="upload-thumb" key={item.id} onDragOver={event => { if (event.dataTransfer.types.includes('application/x-portfolio-screen')) event.preventDefault(); }} onDrop={event => { const data = event.dataTransfer.getData('application/x-portfolio-screen'); if (!data) return; event.preventDefault(); const moved = JSON.parse(data) as { group: string; index: number }; if (moved.group === group) move(moved.index, index); }}>
         <Upload label={`Заменить скрин ${index + 1}`} accept={videoScreens ? 'video/mp4,video/webm' : 'image/*'} onFiles={files => addScreens(files, index)}>{item.src && <Thumb item={item} />}</Upload>

@@ -2,6 +2,7 @@ import profile from '../content/profile.json';
 import calloutStyles from '../content/callouts.json';
 import updatedProjects from './generated/project-updated.json';
 import templates from '../content/mockups.json';
+import type { CalloutLibrary, CalloutNote } from './calloutTypes';
 import type { MediaSpec, MockupTemplate } from './mediaTypes';
 
 export type ProfileSection = { label: string; text: string };
@@ -22,6 +23,7 @@ export type CaseSection = {
   media?: MediaSpec;
   enabled?: boolean;
   showMedia?: boolean;
+  notes?: CalloutNote[];
 };
 export type PortfolioCase = {
   id: string;
@@ -43,10 +45,7 @@ export type PortfolioCase = {
 };
 
 export const profileContent = profile as Profile;
-export const solutionCallouts = calloutStyles as {
-  hypothesis: { icon: string; title: string; color: string; backgroundOpacity: string };
-  test: { icon: string; title: string; color: string; backgroundOpacity: string };
-};
+export const solutionCallouts = calloutStyles as CalloutLibrary;
 export const projectUpdated = updatedProjects as Record<string, string>;
 export const mockupTemplates = templates as MockupTemplate[];
 

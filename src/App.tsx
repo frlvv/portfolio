@@ -1,6 +1,7 @@
 import { motion, useMotionTemplate, useSpring } from 'motion/react';
 import GradientBackground from './GradientBackground';
 import CaseMedia from './CaseMedia';
+import { calloutTemplates } from './calloutTypes';
 import type { MediaSpec } from './mediaTypes';
 import Portrait from './Portrait';
 import React, { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -185,24 +186,29 @@ function ImageSlider({ project }: { project: PortfolioCase }) {
   </div>;
 }
 
-function SolutionNote({ type, children }: { type: 'hypothesis' | 'test'; children: React.ReactNode }) {
-  const settings = solutionCallouts[type];
+function SolutionNote({ type, children }: { type: string; children: React.ReactNode }) {
+  const settings = calloutTemplates(solutionCallouts).find(item => item.id === type);
+  if (!settings) return null;
   return <div className={`solution-note solution-note-${type}`} style={{ '--note-color': settings.color, '--note-opacity': settings.backgroundOpacity } as CSSProperties}><span className="solution-note-icon">{settings.icon}</span><div><strong>{settings.title}</strong><p>{children}</p></div></div>;
+}
+
+function AddedNotes({ section, position }: { section: CaseSection; position: 'before' | 'after' }) {
+  return section.notes?.filter(note => note.enabled !== false && note.position === position).map(note => <SolutionNote key={note.id} type={note.templateId}>{note.text}</SolutionNote>);
 }
 
 function Solution({ section }: { section: CaseSection }) {
   const uploadedMedia = section.showMedia === false ? null : section.media ? <CaseMedia value={section.media} /> : section.items?.length ? <div className={`solution-media-gallery case-media-${section.mediaMode || 'photo'}`}>{section.items.map((item, index) => <figure key={`${item.image}-${index}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</div> : <CaseVisual kind={section.visual} image={section.image} />;
-  return <div className="solution-block"><div className="solution-copy"><h3>{section.heading}</h3>{section.hypothesis && section.showHypothesis !== false && <SolutionNote type="hypothesis">{section.hypothesis}</SolutionNote>}<div className="body-copy"><Markdown>{section.body}</Markdown></div>{section.test && section.showTest !== false && <SolutionNote type="test">{section.test}</SolutionNote>}</div>{uploadedMedia}</div>;
+  return <div className="solution-block"><div className="solution-copy"><h3>{section.heading}</h3>{section.hypothesis && section.showHypothesis !== false && <SolutionNote type="hypothesis">{section.hypothesis}</SolutionNote>}<AddedNotes section={section} position="before" /><div className="body-copy"><Markdown>{section.body}</Markdown></div>{section.test && section.showTest !== false && <SolutionNote type="test">{section.test}</SolutionNote>}<AddedNotes section={section} position="after" /></div>{uploadedMedia}</div>;
 }
 
 function CaseContent({ project }: { project: PortfolioCase }) {
   const visibleSections = project.sections?.filter(section => section.enabled !== false) ?? [];
   const renderSection = (section: CaseSection, index: number) => {
-    const body = <div className="body-copy"><Markdown>{section.body}</Markdown></div>;
+    const body = <><AddedNotes section={section} position="before" /><div className="body-copy"><Markdown>{section.body}</Markdown></div><AddedNotes section={section} position="after" /></>;
     if (section.type === 'solution') return <Solution key={index} section={section} />;
     if (section.media || section.showMedia === false) return <section className="case-section case-edited-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.callout && <p className="callout"><span>☝️</span>{section.callout}</p>}{body}{section.media && section.showMedia !== false && <CaseMedia value={section.media} />}</section>;
     if (section.type === 'image') return <section className="case-section case-image-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.image && <img src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
-    if (section.type === 'gallery') return <section className={`case-section case-media-gallery case-media-${section.mediaMode || 'photo'}`} key={index}>{section.heading && <h2>{section.heading}</h2>}{section.items?.map((item, mediaIndex) => <figure key={`${item.image}-${mediaIndex}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</section>;
+    if (section.type === 'gallery') return <section className={`case-section case-media-gallery case-media-${section.mediaMode || 'photo'}`} key={index}>{section.heading && <h2>{section.heading}</h2>}{body}{section.items?.map((item, mediaIndex) => <figure key={`${item.image}-${mediaIndex}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</section>;
     if (section.type === 'result') return <section className="case-section case-result" key={index}><h2>{section.heading}</h2>{section.image && <img className="result-overview" src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
     if (section.type === 'context') return <section className="case-section context-section" key={index}><div><h2>{section.heading}</h2>{body}</div>{section.image ? <img className="case-context-image" src={media(section.image)} alt="" loading="lazy" /> : project.slides?.length || project.layout === 'savings' ? <ImageSlider project={project} /> : null}</section>;
     return <section className="case-section text-section" key={index}><h2>{section.heading}</h2>{section.callout && <p className="callout"><span>☝️</span>{section.callout}</p>}{body}{section.image && <img className="case-section-image" src={media(section.image)} alt="" loading="lazy" />}</section>;
