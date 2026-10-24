@@ -5,3 +5,6 @@ ignore = 'if [ -z "$CACHED_COMMIT_REF" ] || [ "$CACHED_COMMIT_REF" = "$COMMIT_RE
 
 [build.environment]
 NODE_VERSION = "22"
+
+[[plugins]]
+package = "@netlify/plugin-nextjs"
