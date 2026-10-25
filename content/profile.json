@@ -4,11 +4,7 @@
   "sections": [
     {
       "label": "Опыт",
-      "text": "Проектирую мобильные приложения, Telegram Mini Apps и игровые лаунчеры на фрилансе, в том числе для постоянных клиентов.\nРаботал над внутренним сервисом учёта нагрузки сотрудников и затрат по проектам во время стажировки."
-    },
-    {
-      "label": "Скиллы",
-      "text": "research, user flows, wireframing, prototyping, usability testing, design systems, edge cases, animation, lottie, handoff, design review"
+      "text": "Разрабатываю мобильные и веб продукты, где важна продуманная логика, чистый UI и внимание к edge cases. Сразу оживляю макеты в работающие билды и нативные прототипы с motion и lottie. \nЗакрываю весь процесс включая research, user flows, usability testing, design systems и handoff."
     }
   ],
   "builtTitle": "Built",
@@ -16,19 +12,19 @@
   "showBuilds": true,
   "builds": [
     {
-      "id": "safari-ui",
-      "name": "macOS 27 Safari UI",
-      "description": "Мокап Safari для Figma",
-      "url": "https://www.figma.com/community/file/1693642860165653717/macos-27-safari-ui",
-      "icon": "assets/figma-icon.svg",
-      "enabled": true
-    },
-    {
       "id": "langg",
       "name": "Langg",
       "description": "Исправление раскладки на macOS",
       "url": "https://github.com/frlvv/Langg",
       "icon": "assets/langg-icon.png",
+      "enabled": true
+    },
+    {
+      "id": "safari-ui",
+      "name": "macOS 27 Safari UI",
+      "description": "Настраиваемый мокап Safari",
+      "url": "https://www.figma.com/community/file/1693642860165653717/macos-27-safari-ui",
+      "icon": "assets/figma-icon.svg",
       "enabled": true
     }
   ]
