@@ -1,3 +1,5 @@
+import { apiRequest as request } from './api';
+export { SaveConflictError, CmsSignInError } from './api';
 import { strToU8, zipSync } from 'fflate';
 import { cases, media, profileContent, solutionCallouts, mockupTemplates, type PortfolioCase, type CaseSection, type Profile } from '../content';
 import type { MediaSpec, MockupTemplate } from '../mediaTypes';
@@ -42,16 +44,6 @@ function result<T>(request: IDBRequest<T>): Promise<T> {
 }
 function committed(transaction: IDBTransaction) {
   return new Promise<void>((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => reject(transaction.error); transaction.onabort = () => reject(transaction.error); });
-}
-export class SaveConflictError extends Error {
- constructor(message: string, public revision: string) { super(message); }
-}
-async function request<T>(path: string, body?: unknown): Promise<T> {
- const response = await fetch(path, body === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
- const result = await response.json();
- if (response.status === 409 && /^[a-f0-9]{40}$/.test(result.revision ?? '')) throw new SaveConflictError(result.message, result.revision);
- if (!response.ok) throw new Error(result.message || 'Не удалось выполнить запрос.');
- return result as T;
 }
 export async function loadState(fresh = false): Promise<EditorState> {
  const remote = await request<{ revision: string; state: EditorState }>('/api/portfolio');
