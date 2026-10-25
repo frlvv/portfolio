@@ -8,10 +8,12 @@ export type ProfileSection = { label: string; text: string };
 export type PortfolioBuild = { id: string; name: string; description: string; url: string; icon?: string; enabled?: boolean };
 export type Profile = { name: string; role: string; sections: ProfileSection[]; portrait?: string; builtTitle?: string; projectsTitle?: string; showBuilds?: boolean; builds?: PortfolioBuild[] };
 export type CaseSection = {
-  type: 'text' | 'solution' | 'image' | 'context' | 'result' | 'gallery';
+  type: 'text' | 'solution' | 'image' | 'context' | 'result' | 'gallery' | 'task';
   heading?: string;
   body?: string;
   callout?: string;
+  showCallout?: boolean;
+  calloutStyle?: { icon: string; color: string; backgroundOpacity: string };
   image?: string;
   visual?: 'hub' | 'type' | 'plan' | 'goal' | 'change' | 'quick';
   hypothesis?: string;

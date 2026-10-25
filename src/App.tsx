@@ -1,3 +1,4 @@
+import TaskCallout from './TaskCallout';
 import BuiltCard from './BuiltCard';
 import { motion, useMotionTemplate, useSpring } from 'motion/react';
 import GradientBackground from './GradientBackground';
@@ -207,12 +208,12 @@ function CaseContent({ project }: { project: PortfolioCase }) {
   const renderSection = (section: CaseSection, index: number) => {
     const body = <><AddedNotes section={section} position="before" /><div className="body-copy"><Markdown>{section.body}</Markdown></div><AddedNotes section={section} position="after" /></>;
     if (section.type === 'solution') return <Solution key={index} section={section} />;
-    if (section.media || section.showMedia === false) return <section className="case-section case-edited-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.callout && <p className="callout"><span>☝️</span>{section.callout}</p>}{body}{section.media && section.showMedia !== false && <CaseMedia value={section.media} />}</section>;
+    if (section.media || section.showMedia === false) return <section className="case-section case-edited-section" key={index}>{section.heading && <h2>{section.heading}</h2>}<TaskCallout section={section} />{body}{section.media && section.showMedia !== false && <CaseMedia value={section.media} />}</section>;
     if (section.type === 'image') return <section className="case-section case-image-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.image && <img src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
     if (section.type === 'gallery') return <section className={`case-section case-media-gallery case-media-${section.mediaMode || 'photo'}`} key={index}>{section.heading && <h2>{section.heading}</h2>}{body}{section.items?.map((item, mediaIndex) => <figure key={`${item.image}-${mediaIndex}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</section>;
     if (section.type === 'result') return <section className="case-section case-result" key={index}><h2>{section.heading}</h2>{section.image && <img className="result-overview" src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
     if (section.type === 'context') return <section className="case-section context-section" key={index}><div><h2>{section.heading}</h2>{body}</div>{section.image ? <img className="case-context-image" src={media(section.image)} alt="" loading="lazy" /> : project.slides?.length || project.layout === 'savings' ? <ImageSlider project={project} /> : null}</section>;
-    return <section className="case-section text-section" key={index}><h2>{section.heading}</h2>{section.callout && <p className="callout"><span>☝️</span>{section.callout}</p>}{body}{section.image && <img className="case-section-image" src={media(section.image)} alt="" loading="lazy" />}</section>;
+    return <section className="case-section text-section" key={index}><h2>{section.heading}</h2><TaskCallout section={section} />{body}{section.image && <img className="case-section-image" src={media(section.image)} alt="" loading="lazy" />}</section>;
   };
   const sections: React.ReactNode[] = [];
   for (let index = 0; index < visibleSections.length; index++) {
