@@ -48,7 +48,7 @@ export default function CaseMedia({ value, layout = 'hero', active = true, templ
           '--screen-height': `${template.insetHeight}%`,
           '--screen-radius': `${template.radius}% / ${template.radius * template.screenWidth / template.screenHeight}%`,
           aspectRatio: `${template.width}/${template.height}`,
-          ...(count === 1 ? { left: layout === 'cover' ? '24.2333%' : '30.8545%' } : {}),
+          ...(count === 1 ? { left: layout === 'cover' ? '24.2333%' : '30.8545%', top: layout === 'cover' ? '10.9375%' : '10.169%' } : {}),
           ...(count > 2 ? { width: `${Math.min(34, 92 / count)}%`, left: `${4 + index * (92 / count)}%`, top: `${12 + (index % 2) * 8}%` } : {}),
           ...(landscape ? { width: `${count === 1 ? 78 : Math.min(62, 92 / count)}%`, left: `${count === 1 ? 11 : 4 + index * (92 / count)}%`, top: `${count === 1 ? 22 : 18 + (index % 2) * 10}%` } : {}),
         } as CSSProperties;
