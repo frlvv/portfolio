@@ -20,7 +20,7 @@ function MediaVideo({ src, active }: { src: string; active: boolean }) {
     reduced.addEventListener('change', update);
     return () => { observer.disconnect(); document.removeEventListener('visibilitychange', update); reduced.removeEventListener('change', update); element.pause(); };
   }, [src, active]);
-  return <video ref={ref} src={src} muted loop playsInline preload="metadata" />;
+  return <video ref={ref} src={src} poster={/\/gradient\.mp4$/.test(src) ? src.replace(/gradient\.mp4$/, 'gradient-poster.jpg') : undefined} muted loop playsInline preload="metadata" />;
 }
 
 function Visual({ item, active, resolve }: { item?: MediaItem; active: boolean; resolve: (src?: string) => string }) {

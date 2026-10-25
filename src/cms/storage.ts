@@ -49,7 +49,7 @@ export async function loadState(): Promise<EditorState | undefined> {
     files.set(item.id, item.file);
     urls.set(item.id, URL.createObjectURL(item.file));
   }
-  return saved?.version === 1 && Array.isArray(saved.cases) ? saved : undefined;
+  return saved?.version === 1 && Array.isArray(saved.cases) ? { ...saved, profile: { ...profileContent, ...saved.profile, builds: saved.profile.builds ?? profileContent.builds } } : undefined;
 }
 export async function saveState(state: EditorState) {
   const connection = await db();

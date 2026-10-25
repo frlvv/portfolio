@@ -10,5 +10,26 @@
       "label": "Скиллы",
       "text": "research, user flows, wireframing, prototyping, usability testing, design systems, edge cases, animation, lottie, handoff, design review"
     }
+  ],
+  "builtTitle": "Built",
+  "projectsTitle": "Projects",
+  "showBuilds": true,
+  "builds": [
+    {
+      "id": "safari-ui",
+      "name": "macOS 27 Safari UI",
+      "description": "Мокап Safari для Figma",
+      "url": "https://www.figma.com/community/file/1693642860165653717/macos-27-safari-ui",
+      "icon": "assets/figma-icon.svg",
+      "enabled": true
+    },
+    {
+      "id": "langg",
+      "name": "Langg",
+      "description": "Исправление раскладки на macOS",
+      "url": "https://github.com/frlvv/Langg",
+      "icon": "assets/langg-icon.png",
+      "enabled": true
+    }
   ]
 }

@@ -1,0 +1,14 @@
+.built-section{display:flex;flex-direction:column;gap:16px;min-width:0}
+.built-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px}
+.built-card{display:flex;align-items:center;gap:14px;min-width:0;min-height:80px;padding:12px 10px 12px 0;border-radius:16px;color:inherit;text-decoration:none;transition:background-color 160ms ease,color 160ms ease}
+.built-icon{display:block;width:48px;height:48px;flex:0 0 48px;object-fit:contain;border-radius:12px;user-select:none}
+.built-initial{display:grid;place-items:center;background:#242424;font-size:24px;color:#aaa}
+.built-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+.built-name{font-size:17px;line-height:22px;letter-spacing:-.34px;font-weight:400;overflow-wrap:anywhere}
+.built-description{font-size:14px;line-height:19px;letter-spacing:-.28px;color:#818181;text-wrap:pretty;overflow-wrap:anywhere}
+.built-arrow{flex:none;margin-left:auto;align-self:flex-start;color:#777;font-size:16px;line-height:22px;opacity:0;transition:opacity 150ms ease}
+.built-card:focus-visible{outline:2px solid #999;outline-offset:4px}
+.built-card:focus-visible .built-arrow{opacity:1}
+@media(hover:hover) and (pointer:fine){a.built-card:hover{color:#c9c9c9;background:rgba(255,255,255,.025)}a.built-card:hover .built-arrow{opacity:1}}
+@media(max-width:500px){.built-grid{grid-template-columns:1fr;gap:4px}.built-card{padding-right:0;min-height:76px}.built-arrow{opacity:1;align-self:center}}
+@media(prefers-reduced-motion:reduce){.built-card,.built-arrow{transition:none}}

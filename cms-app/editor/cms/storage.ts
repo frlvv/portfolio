@@ -58,7 +58,8 @@ export async function loadState(fresh = false): Promise<EditorState> {
  const [saved, savedFiles] = await Promise.all([result<EditorState | undefined>(transaction.objectStore('drafts').get('current')), result<StoredFile[]>(transaction.objectStore('files').getAll())]);
  for (const item of savedFiles) { files.set(item.id, item.file); urls.set(item.id, URL.createObjectURL(item.file)); }
  revision = fresh ? remote.revision : saved?.revision ?? remote.revision;
- return !fresh && saved?.version === 1 && Array.isArray(saved.cases) ? saved : { ...normalized, revision };
+ const profile = { ...profileContent, ...normalized.profile };
+ return !fresh && saved?.version === 1 && Array.isArray(saved.cases) ? { ...saved, profile: { ...profile, ...saved.profile, builds: saved.profile.builds ?? profile.builds } } : { ...normalized, profile, revision };
 }
 export async function saveState(state: EditorState) {
   const connection = await db();

@@ -5,7 +5,8 @@ import type { CalloutLibrary, CalloutNote } from './calloutTypes';
 import type { MediaSpec, MockupTemplate } from './mediaTypes';
 
 export type ProfileSection = { label: string; text: string };
-export type Profile = { name: string; role: string; sections: ProfileSection[] };
+export type PortfolioBuild = { id: string; name: string; description: string; url: string; icon?: string; enabled?: boolean };
+export type Profile = { name: string; role: string; sections: ProfileSection[]; portrait?: string; builtTitle?: string; projectsTitle?: string; showBuilds?: boolean; builds?: PortfolioBuild[] };
 export type CaseSection = {
   type: 'text' | 'solution' | 'image' | 'context' | 'result' | 'gallery';
   heading?: string;

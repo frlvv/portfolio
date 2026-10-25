@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
+import { media } from './content';
 import { motion, useMotionTemplate, useSpring } from 'motion/react';
 
-export default function Portrait({ blocked }: { blocked: boolean }) {
+export default function Portrait({ blocked, source }: { blocked: boolean; source?: string }) {
   const x = useSpring(0, { mass: 1, stiffness: 100, damping: 10 });
   const y = useSpring(0, { mass: 1, stiffness: 100, damping: 10 });
   const transform = useMotionTemplate`perspective(800px) rotateX(${y}deg) rotateY(${x}deg)`;
@@ -33,6 +34,6 @@ export default function Portrait({ blocked }: { blocked: boolean }) {
   }, [blocked, x, y]);
 
   return <motion.div className="profile-portrait" style={{ transform }}>
-    <img src={`${import.meta.env.BASE_URL}assets/portrait.png`} alt="" width="492" height="792" draggable="false" />
+    <img src={media(source || 'assets/portrait.png')} alt="" width="492" height="792" draggable="false" />
   </motion.div>;
 }
