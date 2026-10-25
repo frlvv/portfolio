@@ -3,15 +3,16 @@
     "id": "iphone",
     "name": "iPhone 18 Pro",
     "frame": "assets/phone-frame.png",
+    "device": "phone",
     "width": 450,
     "height": 920,
-    "screenWidth": 804,
-    "screenHeight": 1748,
-    "insetX": 5.333333,
+    "screenWidth": 1206,
+    "screenHeight": 2622,
+    "insetX": 5,
     "insetY": 2.5,
-    "insetWidth": 89.333333,
+    "insetWidth": 90,
     "insetHeight": 95,
-    "radius": 14.255
+    "radius": 14
   },
   {
     "id": "none",

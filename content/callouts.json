@@ -10,5 +10,14 @@
     "title": "Что проверю на юзабилити-тесте",
     "color": "#8CB8FF",
     "backgroundOpacity": "16%"
-  }
+  },
+  "custom": [
+    {
+      "icon": "🙄",
+      "title": "ps",
+      "color": "#B69BFF",
+      "backgroundOpacity": "16%",
+      "id": "b84a7226-d313-4662-998c-a3a84fbf3fd0"
+    }
+  ]
 }
