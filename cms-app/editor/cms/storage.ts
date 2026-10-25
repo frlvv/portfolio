@@ -43,9 +43,13 @@ function result<T>(request: IDBRequest<T>): Promise<T> {
 function committed(transaction: IDBTransaction) {
   return new Promise<void>((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => reject(transaction.error); transaction.onabort = () => reject(transaction.error); });
 }
+export class SaveConflictError extends Error {
+ constructor(message: string, public revision: string) { super(message); }
+}
 async function request<T>(path: string, body?: unknown): Promise<T> {
  const response = await fetch(path, body === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
  const result = await response.json();
+ if (response.status === 409 && /^[a-f0-9]{40}$/.test(result.revision ?? '')) throw new SaveConflictError(result.message, result.revision);
  if (!response.ok) throw new Error(result.message || 'Не удалось выполнить запрос.');
  return result as T;
 }
@@ -122,7 +126,7 @@ async function prepareContent(state: EditorState, view: string) {
  const assets = [...used].map(id => ({ id, file: files.get(id)!, path: `public/${replace(`cms-media:${id}`) as string}` }));
  return { documents, assets };
 }
-export async function publishContent(state: EditorState, view: string) {
+export async function publishContent(state: EditorState, view: string, expectedRevision?: string) {
  if (!revision) throw new Error('Сначала загрузи данные из GitHub.');
  const { documents, assets } = await prepareContent(state, view);
  if (assets.some(asset => asset.file.size > 3_500_000)) throw new Error('Максимальный размер файла — 3,5 МБ. Сохрани ZIP для файлов большего размера.');
@@ -131,7 +135,7 @@ export async function publishContent(state: EditorState, view: string) {
   const content = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = () => reject(new Error('Не удалось прочитать файл.')); reader.readAsDataURL(asset.file); });
   blobs.push(await request<{ path: string; sha: string }>('/api/portfolio/uploads', { path: asset.path, content }));
  }
- const published = await request<{ revision: string; changed: boolean }>('/api/portfolio', { revision, view, documents, assets: blobs });
+ const published = await request<{ revision: string; changed: boolean }>('/api/portfolio', { revision: expectedRevision ?? revision, view, documents, assets: blobs });
  revision = published.revision;
  if (baseline) { if (documents['content/callouts.json']) baseline.callouts = structuredClone(state.callouts); if (documents['content/mockups.json']) baseline.templates = structuredClone(state.templates); }
  await saveState(state);

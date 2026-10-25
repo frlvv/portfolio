@@ -1,3 +1,4 @@
+import { toggleBulletList } from './textFormatting';
 import { useLayoutEffect, useRef, type ChangeEvent, type ReactNode } from 'react';
 
 export function CmsIcon({ name }: { name: 'edit' | 'upload' | 'divider' }) {
@@ -39,7 +40,14 @@ export function TextEditor({ value, onChange, label }: { value?: string; onChang
     onChange(text.slice(0, start) + before + text.slice(start, end) + after + text.slice(end));
     requestAnimationFrame(() => { input.focus(); input.setSelectionRange(start + before.length, end + before.length); });
   };
-  return <div className="cms-text-editor"><div className="text-tools"><button type="button" onMouseDown={event => event.preventDefault()} onClick={() => format('**', '**')} aria-label="Жирный текст"><b>B</b></button><button type="button" onMouseDown={event => event.preventDefault()} onClick={() => format('*', '*')} aria-label="Курсив"><i>I</i></button><button type="button" onMouseDown={event => event.preventDefault()} onClick={() => format('\n- ')} aria-label="Список">☷</button></div><textarea ref={ref} aria-label={label} placeholder="Начни писать…" value={value ?? ''} onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value)} /></div>;
+  const formatList = () => {
+    const input = ref.current;
+    if (!input) return;
+    const next = toggleBulletList(value ?? '', input.selectionStart, input.selectionEnd);
+    onChange(next.text);
+    requestAnimationFrame(() => { input.focus(); input.setSelectionRange(next.start, next.end); });
+  };
+  return <div className="cms-text-editor"><div className="text-tools"><button type="button" onMouseDown={event => event.preventDefault()} onClick={() => format('**', '**')} aria-label="Жирный текст"><b>B</b></button><button type="button" onMouseDown={event => event.preventDefault()} onClick={() => format('*', '*')} aria-label="Курсив"><i>I</i></button><button type="button" onMouseDown={event => event.preventDefault()} onClick={formatList} aria-label="Список">☷</button></div><textarea ref={ref} aria-label={label} placeholder="Начни писать…" value={value ?? ''} onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value)} /></div>;
 }
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return <div className="cms-field"><span className="field-label">{label}</span>{children}</div>;

@@ -1,5 +1,5 @@
 import { errorResponse, HttpError, requirePortfolioAccess } from '@/lib/access';
-import { branch, head, repository, commitDocuments } from '@/lib/repository';
+import { branch, head, repository, commitDocuments, PublicationConflict } from '@/lib/repository';
 import { publicationSchema, validateDocuments } from '@/lib/validation';
 export const dynamic = 'force-dynamic';
 export async function GET() {
@@ -26,5 +26,5 @@ export async function POST(request: Request) {
   let documents;
   try { documents = validateDocuments(view, result.data.documents); } catch { throw new HttpError('В полях есть некорректные значения.', 400); }
   return Response.json(await commitDocuments(octokit, revision, view, documents, assets));
- } catch (error) { return errorResponse(error); }
+ } catch (error) { if (error instanceof PublicationConflict) return Response.json({ message: error.message, revision: error.revision, paths: error.paths }, { status: 409 }); return errorResponse(error); }
 }
