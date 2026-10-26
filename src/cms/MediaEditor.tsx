@@ -29,7 +29,7 @@ function checkFiles(files: File[], video: boolean) {
   if (files.some(file => video ? !file.type.startsWith('video/') : !file.type.startsWith('image/'))) throw new Error(video ? 'Здесь нужно видео.' : 'Здесь нужно изображение.');
 }
 
-export default function MediaEditor({ value, onChange, templates, title, layout = 'hero' }: { value: MediaSpec; onChange: (value: MediaSpec) => void; templates: MockupTemplate[]; title: string; layout?: 'cover' | 'hero' }) {
+export default function MediaEditor({ value, onChange, templates, title, layout = 'hero' }: { value: MediaSpec; onChange: (value: MediaSpec) => void; templates: MockupTemplate[]; title: string; layout?: 'cover' | 'hero' | 'content' }) {
   const [expanded, setExpanded] = useState(true), [choosingTemplate, setChoosingTemplate] = useState(false);
   const group = useId();
   const template = templates.find(item => item.id === value.mockupId) ?? templates[0];

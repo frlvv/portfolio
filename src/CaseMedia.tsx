@@ -30,10 +30,14 @@ function Visual({ item, active, resolve }: { item?: MediaItem; active: boolean; 
   return item.kind === 'video' || /\.(mp4|webm|mov)(?:\?|$)/i.test(item.src) ? <MediaVideo src={src} active={active} /> : <img src={src} alt="" draggable="false" />;
 }
 
-export default function CaseMedia({ value, layout = 'hero', active = true, templates = mockupTemplates, resolve = media }: { value: MediaSpec; layout?: 'cover' | 'hero'; active?: boolean; templates?: MockupTemplate[]; resolve?: (src?: string) => string }) {
+export default function CaseMedia({ value, layout = 'hero', active = true, templates = mockupTemplates, resolve = media }: { value: MediaSpec; layout?: 'cover' | 'hero' | 'content'; active?: boolean; templates?: MockupTemplate[]; resolve?: (src?: string) => string }) {
   const template = templates.find(item => item.id === value.mockupId) ?? templates[0];
   const count = value.screens.length;
   const landscape = template.width > template.height;
+  const gap = 4;
+  const ratio = template.width / template.height;
+  const contentWidth = Math.min((88 - gap * (count - 1)) / Math.max(count, 1), 84 * ratio / (948 / 708));
+  const contentHeight = contentWidth * (948 / 708) / ratio;
   return <div className={`media-renderer media-renderer-${layout} media-renderer-${value.mode}`}>
     {value.mode === 'mockup' ? <>
       <div className="media-renderer-background"><Visual item={value.background.source} active={active && value.background.mode === 'video'} resolve={resolve} /></div>
@@ -51,6 +55,11 @@ export default function CaseMedia({ value, layout = 'hero', active = true, templ
           ...(count === 1 ? { left: layout === 'cover' ? '24.2333%' : '30.8545%', top: layout === 'cover' ? '10.9375%' : '10.169%' } : {}),
           ...(count > 2 ? { width: `${Math.min(34, 92 / count)}%`, left: `${4 + index * (92 / count)}%`, top: `${12 + (index % 2) * 8}%` } : {}),
           ...(landscape ? { width: `${count === 1 ? 78 : Math.min(62, 92 / count)}%`, left: `${count === 1 ? 11 : 4 + index * (92 / count)}%`, top: `${count === 1 ? 22 : 18 + (index % 2) * 10}%` } : {}),
+          ...(layout === 'content' ? {
+            width: `${contentWidth}%`,
+            left: `${(100 - count * contentWidth - (count - 1) * gap) / 2 + index * (contentWidth + gap)}%`,
+            top: `${(100 - contentHeight) / 2}%`,
+          } : {}),
         } as CSSProperties;
         return <div className={`media-renderer-phone media-renderer-phone-${index + 1}${template.frame ? '' : ' is-frameless'}`} style={style} key={item.id}>
           <div className="media-renderer-screen"><Visual item={item} active={active && value.motion === 'animated'} resolve={resolve} /></div>
