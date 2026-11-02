@@ -62,11 +62,6 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
         const target = content.getBoundingClientRect();
         const source = originBoxes.current[index];
         if (source?.width && target.width) {
-          const item = content.parentElement;
-          if (item?.classList.contains('mockup-zoom-thumb')) {
-            const fade = animate(item, [{ opacity: 1 }, { opacity: .52 }]);
-            void fade.finished.then(() => fade.cancel()).catch(() => undefined);
-          }
           const animation = animate(content, [{ transform: inverse(source, target, target.width / content.offsetWidth) }, { transform: 'translate(0px,0px) scale(1,1)' }]);
           void animation.finished.then(() => animation.cancel()).catch(() => undefined);
         }
@@ -79,6 +74,7 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
         void animation.finished.then(() => animation.cancel()).catch(() => undefined);
       }
       origins.current.forEach(hide);
+      host.current?.closest('.case-viewport')?.querySelectorAll<HTMLElement>('.case-close,.case-top').forEach(hide);
       if (heading.current && headingBox.current) hide(heading.current);
       element.style.visibility = '';
     });
@@ -109,7 +105,6 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
   };
   const choose = (index: number) => {
     if (closing.current) return;
-    animations.current.forEach(animation => animation.cancel()); animations.current = [];
     setSelected(index);
   };
   return <Dialog.Root modal="trap-focus" open={isOpen} onOpenChange={value => { if (!value) close(); }}>

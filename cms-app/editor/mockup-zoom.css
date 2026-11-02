@@ -23,3 +23,5 @@
 @media(hover:hover) and (pointer:fine){.mockup-zoom-thumb:hover{opacity:.78}}
 @media(max-width:700px){.mockup-zoom-popup{gap:24px;padding:max(20px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom))}.mockup-zoom-title{font-size:20px;line-height:25px;letter-spacing:-.4px}.mockup-zoom-stage{--zoom-width:min(62vw,calc((100dvh - 220px) * var(--zoom-ratio)));--zoom-gap:28px}.mockup-zoom-close{top:max(20px,env(safe-area-inset-top));right:16px}}
 @media(prefers-reduced-motion:reduce){.mockup-zoom-backdrop,.mockup-zoom-item{transition:none}}
+
+@starting-style{.mockup-zoom-thumb{opacity:1}}
