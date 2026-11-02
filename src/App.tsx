@@ -1,6 +1,7 @@
 import TaskCallout from './TaskCallout';
 import BuiltGrid from './BuiltGrid';
 import CoverInteraction from './CoverInteraction';
+import MockupZoom from './MockupZoom';
 import GradientBackground from './GradientBackground';
 import CaseMedia from './CaseMedia';
 import { calloutTemplates } from './calloutTypes';
@@ -58,11 +59,12 @@ function PendingProjectCard({ project }: { project: PortfolioCase }) {
   </button>;
 }
 
-function PhoneMockup({ screen, className }: { screen: 'hub' | 'goal'; className: string }) {
-  return <div className={className}>
+function PhoneMockup({ screen, className, onClick }: { screen: 'hub' | 'goal'; className: string; onClick?: () => void }) {
+  const Device = onClick ? 'button' : 'div';
+  return <Device className={`${className}${onClick ? ' mockup-zoom-trigger' : ''}`} type={onClick ? 'button' : undefined} onClick={onClick} aria-label={onClick ? 'Увеличить' : undefined}>
     <img className="mockup-screen" src={asset(`${screen}-screen.png`)} alt="" draggable="false" />
     <img className="mockup-frame" src={asset('phone-frame.png')} alt="" draggable="false" />
-  </div>;
+  </Device>;
 }
 
 function Cover() {
@@ -73,12 +75,13 @@ function Cover() {
   </div>}</CoverInteraction>;
 }
 
-function HeroCover() {
-  return <div className="hero-cover">
+function HeroCover({ title }: { title?: string }) {
+  const screens = ['hub', 'goal'] as const;
+  return <MockupZoom title={title} ratio={450 / 920} items={screens.map(screen => ({ id: screen, content: <PhoneMockup screen={screen} className="hero-phone layered-phone" /> }))}>{open => <div className="hero-cover">
     <GradientBackground active />
-    <PhoneMockup screen="hub" className="hero-phone hero-phone-first layered-phone" />
-    <PhoneMockup screen="goal" className="hero-phone hero-phone-second layered-phone" />
-  </div>;
+    <PhoneMockup screen="hub" className="hero-phone hero-phone-first layered-phone" onClick={() => open(0)} />
+    <PhoneMockup screen="goal" className="hero-phone hero-phone-second layered-phone" onClick={() => open(1)} />
+  </div>}</MockupZoom>;
 }
 
 function EditedCover({ value }: { value: MediaSpec }) {
@@ -90,14 +93,15 @@ const visualPhones: Record<VisualKind, string[]> = {
   hub: ['hero-hub.png'], type: ['type-goal.png'], plan: ['amount.png', 'plan.png', 'no-plan.png'], goal: ['screen-goal.png'], change: ['plan-overview.png', 'plan-adjust.png'], quick: ['quick-amount.png', 'quick-plan.png', 'quick-hold.png'],
 };
 
-function CaseVisual({ kind, image }: { kind?: VisualKind; image?: string }) {
+function CaseVisual({ kind, image, title }: { kind?: VisualKind; image?: string; title?: string }) {
   if (image) return <div className="case-visual case-uploaded-visual"><img src={media(image)} alt="" draggable="false" loading="lazy" /></div>;
   if (!kind) return null;
-  if (kind === 'type') return <div className="case-visual visual-type-original"><img className="visual-background" src={asset('case-bg.png')} width={1254} height={1254} alt="" draggable="false" loading="lazy" /><div className="visual-type-phone"><img className="visual-composite" src={asset('type-goal-original.png')} width={876} height={1810} alt="Четыре типа копилки" draggable="false" loading="lazy" /></div></div>;
-  return <div className={`case-visual visual-${kind}`}>
+  const files = kind === 'type' ? ['type-goal-original.png'] : visualPhones[kind];
+  const picture = (file: string) => <img className={kind === 'type' ? 'visual-composite' : undefined} src={asset(file)} {...(kind === 'type' ? { width: 876, height: 1810 } : imageDimensions[file])} alt="" draggable="false" loading="lazy" />;
+  return <MockupZoom title={title} ratio={450 / 920} items={files.map(file => ({ id: file, content: <div className={kind === 'type' ? 'visual-type-phone' : 'visual-phone'}>{picture(file)}</div> }))}>{open => <div className={`case-visual ${kind === 'type' ? 'visual-type-original' : `visual-${kind}`}`}>
     <img className="visual-background" src={asset('case-bg.png')} width={1254} height={1254} alt="" draggable="false" loading="lazy" />
-    {visualPhones[kind].map((file, index) => <div className={`visual-phone visual-phone-${index + 1}`} key={file}><img src={asset(file)} {...imageDimensions[file]} alt="" draggable="false" loading="lazy" /></div>)}
-  </div>;
+    {files.map((file, index) => <button type="button" className={`mockup-zoom-trigger ${kind === 'type' ? 'visual-type-phone' : `visual-phone visual-phone-${index + 1}`}`} onClick={() => open(index)} aria-label={`Увеличить: ${index + 1}`} key={file}>{picture(file)}</button>)}
+  </div>}</MockupZoom>;
 }
 
 function ContactContent() {
@@ -182,7 +186,7 @@ function AddedNotes({ section, position }: { section: CaseSection; position: 'be
 }
 
 function Solution({ section }: { section: CaseSection }) {
-  const uploadedMedia = section.showMedia === false ? null : section.media ? <CaseMedia value={section.media} layout="content" /> : section.items?.length ? <div className={`solution-media-gallery case-media-${section.mediaMode || 'photo'}`}>{section.items.map((item, index) => <figure key={`${item.image}-${index}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</div> : <CaseVisual kind={section.visual} image={section.image} />;
+  const uploadedMedia = section.showMedia === false ? null : section.media ? <CaseMedia value={section.media} layout="content" title={section.heading} /> : section.items?.length ? <div className={`solution-media-gallery case-media-${section.mediaMode || 'photo'}`}>{section.items.map((item, index) => <figure key={`${item.image}-${index}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</div> : <CaseVisual kind={section.visual} image={section.image} title={section.heading} />;
   return <div className="solution-block"><div className="solution-copy"><h3>{section.heading}</h3>{section.hypothesis && section.showHypothesis !== false && <SolutionNote type="hypothesis">{section.hypothesis}</SolutionNote>}<AddedNotes section={section} position="before" /><div className="body-copy"><Markdown>{section.body}</Markdown></div>{section.test && section.showTest !== false && <SolutionNote type="test">{section.test}</SolutionNote>}<AddedNotes section={section} position="after" /></div>{uploadedMedia}</div>;
 }
 
@@ -191,7 +195,7 @@ function CaseContent({ project }: { project: PortfolioCase }) {
   const renderSection = (section: CaseSection, index: number) => {
     const body = <><AddedNotes section={section} position="before" /><div className="body-copy"><Markdown>{section.body}</Markdown></div><AddedNotes section={section} position="after" /></>;
     if (section.type === 'solution') return <Solution key={index} section={section} />;
-    if (section.media || section.showMedia === false) return <section className="case-section case-edited-section" key={index}>{section.heading && <h2>{section.heading}</h2>}<TaskCallout section={section} />{body}{section.media && section.showMedia !== false && <CaseMedia value={section.media} layout="content" />}</section>;
+    if (section.media || section.showMedia === false) return <section className="case-section case-edited-section" key={index}>{section.heading && <h2>{section.heading}</h2>}<TaskCallout section={section} />{body}{section.media && section.showMedia !== false && <CaseMedia value={section.media} layout="content" title={section.heading} />}</section>;
     if (section.type === 'image') return <section className="case-section case-image-section" key={index}>{section.heading && <h2>{section.heading}</h2>}{section.image && <img src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
     if (section.type === 'gallery') return <section className={`case-section case-media-gallery case-media-${section.mediaMode || 'photo'}`} key={index}>{section.heading && <h2>{section.heading}</h2>}{body}{section.items?.map((item, mediaIndex) => <figure key={`${item.image}-${mediaIndex}`}><img src={media(item.image)} alt="" loading="lazy" draggable="false" />{item.label && <figcaption>{item.label}</figcaption>}</figure>)}</section>;
     if (section.type === 'result') return <section className="case-section case-result" key={index}><h2>{section.heading}</h2>{section.image && <img className="result-overview" src={media(section.image)} alt="" loading="lazy" />}{body}</section>;
@@ -219,7 +223,7 @@ function CaseContent({ project }: { project: PortfolioCase }) {
       {project.about && <div className="case-about"><p className="eyebrow">О проекте</p><Dialog.Description className="body-copy">{project.about}</Dialog.Description></div>}
       {(project.year || project.platform || project.role) && <dl className="case-facts">{project.year && <div><dt>Год</dt><dd>{project.year}</dd></div>}{project.platform && <div><dt>Платформа</dt><dd>{project.platform}</dd></div>}{project.role && <div><dt>Роль в проекте</dt><dd>{project.role}</dd></div>}</dl>}
     </header>
-    {project.heroMedia ? <CaseMedia value={project.heroMedia} /> : project.hero ? <div className="hero-cover case-uploaded-hero"><img src={media(project.hero)} alt="" /></div> : project.layout === 'savings' ? <HeroCover /> : null}
+    {project.heroMedia ? <CaseMedia value={project.heroMedia} title={project.heading || project.title} /> : project.hero ? <div className="hero-cover case-uploaded-hero"><img src={media(project.hero)} alt="" /></div> : project.layout === 'savings' ? <HeroCover title={project.heading || project.title} /> : null}
     {sections}
     {projectUpdated[project.id] && <p className="case-updated eyebrow">Обновлено {new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Volgograd' }).format(new Date(projectUpdated[project.id]))}</p>}
   </article>;
