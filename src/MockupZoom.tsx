@@ -1,25 +1,129 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 import './mockup-zoom.css';
 
 type ZoomItem = { id: string; content: ReactNode };
+type Box = { left: number; top: number; width: number; height: number };
+const easing = 'cubic-bezier(.23,1,.32,1)';
+const reduced = () => matchMedia('(prefers-reduced-motion:reduce)').matches;
+function textBox(element: HTMLElement): Box {
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  return range.getBoundingClientRect();
+}
+function inverse(source: Box, target: Box, scale = 1) {
+  return `translate(${(source.left - target.left) / scale}px,${(source.top - target.top) / scale}px) scale(${source.width / target.width},${source.height / target.height})`;
+}
+
 export default function MockupZoom({ title = 'Мокапы', ratio, items, children }: { title?: string; ratio: number; items: ZoomItem[]; children: (open: (index: number) => void) => ReactNode }) {
   const [selected, setSelected] = useState(0);
   const [isOpen, setOpen] = useState(false);
-  const current = selected;
-  const device = (item: ZoomItem) => <div className="mockup-zoom-content" style={{ aspectRatio: ratio }}>{item.content}</div>;
-  return <Dialog.Root modal="trap-focus" open={isOpen} onOpenChange={setOpen}>
-    {children(index => { if (items[index]) { setSelected(index); setOpen(true); } })}
-    <Dialog.Portal><Dialog.Backdrop className="mockup-zoom-backdrop" /><Dialog.Popup className="mockup-zoom-popup" onKeyDown={event => {
-      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); event.stopPropagation(); setSelected((current + (event.key === 'ArrowRight' ? 1 : -1) + items.length) % items.length); }
+  const host = useRef<HTMLDivElement>(null);
+  const popup = useRef<HTMLDivElement | null>(null);
+  const backdrop = useRef<HTMLDivElement>(null);
+  const origins = useRef<HTMLElement[]>([]);
+  const originBoxes = useRef<Box[]>([]);
+  const heading = useRef<HTMLElement | null>(null);
+  const headingBox = useRef<Box | null>(null);
+  const hidden = useRef(new Map<HTMLElement, string>());
+  const animations = useRef<Animation[]>([]);
+  const frame = useRef(0);
+  const entered = useRef(false);
+  const closing = useRef(false);
+  const restore = () => { hidden.current.forEach((opacity, element) => { element.style.opacity = opacity; }); hidden.current.clear(); };
+  const hide = (element: HTMLElement) => { hidden.current.set(element, element.style.opacity); element.style.opacity = '0'; };
+  const animate = (element: HTMLElement, keyframes: Keyframe[], duration = 280) => {
+    const animation = element.animate(keyframes, { duration: reduced() ? 0 : duration, easing, fill: 'both' });
+    animations.current.push(animation);
+    return animation;
+  };
+  useEffect(() => () => { cancelAnimationFrame(frame.current); animations.current.forEach(animation => animation.cancel()); restore(); }, []);
+  const open = (index: number) => {
+    if (!items[index]) return;
+    animations.current.forEach(animation => animation.cancel()); animations.current = [];
+    origins.current = Array.from(host.current?.querySelectorAll<HTMLElement>('.mockup-zoom-trigger') ?? []);
+    originBoxes.current = origins.current.map(element => element.getBoundingClientRect());
+    const section = host.current?.closest('.solution-block,.case-section,.case-article,.draft-preview');
+    heading.current = Array.from(section?.querySelectorAll<HTMLElement>('h1,h2,h3') ?? []).find(element => element.textContent?.trim() === title?.trim()) ?? null;
+    const box = heading.current ? textBox(heading.current) : null;
+    headingBox.current = box && box.top + box.height > 0 && box.top < window.innerHeight ? box : null;
+    entered.current = false; closing.current = false;
+    setSelected(index); setOpen(true);
+  };
+  const enter = (element: HTMLDivElement | null) => {
+    popup.current = element;
+    if (!element || entered.current) return;
+    entered.current = true;
+    element.style.visibility = 'hidden';
+    frame.current = requestAnimationFrame(() => {
+      if (closing.current || !popup.current) return;
+      element.querySelectorAll<HTMLElement>('[data-zoom-device]').forEach(content => {
+        const index = Number(content.dataset.zoomDevice);
+        const target = content.getBoundingClientRect();
+        const source = originBoxes.current[index];
+        if (source?.width && target.width) {
+          const item = content.parentElement;
+          if (item?.classList.contains('mockup-zoom-thumb')) {
+            const fade = animate(item, [{ opacity: 1 }, { opacity: .52 }]);
+            void fade.finished.then(() => fade.cancel()).catch(() => undefined);
+          }
+          const animation = animate(content, [{ transform: inverse(source, target, target.width / content.offsetWidth) }, { transform: 'translate(0px,0px) scale(1,1)' }]);
+          void animation.finished.then(() => animation.cancel()).catch(() => undefined);
+        }
+      });
+      const label = element.querySelector<HTMLElement>('.mockup-zoom-title');
+      if (label) {
+        const target = label.getBoundingClientRect();
+        const source = headingBox.current;
+        const animation = animate(label, source?.width && target.width ? [{ transform: inverse(source, target) }, { transform: 'translate(0px,0px) scale(1,1)' }] : [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0px)' }]);
+        void animation.finished.then(() => animation.cancel()).catch(() => undefined);
+      }
+      origins.current.forEach(hide);
+      if (heading.current && headingBox.current) hide(heading.current);
+      element.style.visibility = '';
+    });
+  };
+  const close = () => {
+    if (closing.current) return;
+    closing.current = true;
+    cancelAnimationFrame(frame.current);
+    const element = popup.current;
+    if (!element || reduced() || element.style.visibility === 'hidden') { restore(); setOpen(false); return; }
+    const contents = Array.from(element.querySelectorAll<HTMLElement>('[data-zoom-device],.mockup-zoom-title'));
+    const starts = contents.map(content => content.getBoundingClientRect());
+    element.querySelectorAll<HTMLElement>('.mockup-zoom-item').forEach(item => { item.style.transform = getComputedStyle(item).transform; });
+    animations.current.forEach(animation => animation.cancel()); animations.current = [];
+    element.dataset.closing = 'true';
+    const exits = contents.map((content, index) => {
+      const target = content.getBoundingClientRect();
+      const source = content.dataset.zoomDevice !== undefined ? origins.current[Number(content.dataset.zoomDevice)]?.getBoundingClientRect() : heading.current ? textBox(heading.current) : null;
+      if (!target.width) return null;
+      const scale = target.width / content.offsetWidth;
+      const visible = source && source.width && source.top + source.height > 0 && source.top < window.innerHeight;
+      return animate(content, [{ transform: inverse(starts[index], target, scale), opacity: 1 }, { transform: visible ? inverse(source, target, scale) : inverse(starts[index], target, scale), opacity: visible ? 1 : 0 }]);
+    }).filter((animation): animation is Animation => Boolean(animation));
+    if (backdrop.current) backdrop.current.style.opacity = '0';
+    const controls = element.querySelector<HTMLElement>('.mockup-zoom-controls');
+    if (controls) animate(controls, [{ opacity: 1 }, { opacity: 0 }], 180);
+    void Promise.all(exits.map(animation => animation.finished.catch(() => undefined))).then(() => { restore(); setOpen(false); });
+  };
+  const choose = (index: number) => {
+    if (closing.current) return;
+    animations.current.forEach(animation => animation.cancel()); animations.current = [];
+    setSelected(index);
+  };
+  return <Dialog.Root modal="trap-focus" open={isOpen} onOpenChange={value => { if (!value) close(); }}>
+    <div ref={host} className="mockup-zoom-source">{children(open)}</div>
+    <Dialog.Portal><Dialog.Backdrop forceRender ref={backdrop} className="mockup-zoom-backdrop" /><Dialog.Popup ref={enter} className="mockup-zoom-popup" onPointerDown={event => event.stopPropagation()} onClick={event => { if (!(event.target as Element).closest('button')) close(); }} onKeyDown={event => {
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); event.stopPropagation(); choose((selected + (event.key === 'ArrowRight' ? 1 : -1) + items.length) % items.length); }
     }}>
-      <header className="mockup-zoom-heading"><Dialog.Title>{title || 'Мокапы'}</Dialog.Title><Dialog.Close className="mockup-zoom-close" aria-label="Закрыть"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg></Dialog.Close></header>
-      <div className="mockup-zoom-stage" style={{ '--zoom-ratio': ratio } as CSSProperties}>
-        <div className="mockup-zoom-side">{items.slice(0, current).map((item, index) => <button type="button" className="mockup-zoom-thumb" onClick={() => setSelected(index)} aria-label={`${index + 1}`} key={item.id}>{device(item)}</button>)}</div>
-        {items[current] && <button type="button" className="mockup-zoom-main" onClick={() => setOpen(false)} aria-label="Уменьшить" key={items[current].id}>{device(items[current])}</button>}
-        <div className="mockup-zoom-side mockup-zoom-side-right">{items.slice(current + 1).map((item, index) => <button type="button" className="mockup-zoom-thumb" onClick={() => setSelected(current + 1 + index)} aria-label={`${current + 2 + index}`} key={item.id}>{device(item)}</button>)}</div>
-      </div>
-      {items.length > 1 && <div className="mockup-zoom-navigation"><button type="button" onClick={() => setSelected((current - 1 + items.length) % items.length)} aria-label="Предыдущий">←</button><span>{current + 1} / {items.length}</span><button type="button" onClick={() => setSelected((current + 1) % items.length)} aria-label="Следующий">→</button></div>}
+      <header className="mockup-zoom-heading"><Dialog.Title className="mockup-zoom-title">{title || 'Мокапы'}</Dialog.Title></header>
+      <div className="mockup-zoom-stage" style={{ '--zoom-ratio': ratio } as CSSProperties}>{items.map((item, index) => {
+        const offset = index - selected;
+        const distance = offset === 0 ? '0px' : `calc(${Math.sign(offset)} * (var(--zoom-width) * .73 + var(--zoom-gap) + ${Math.abs(offset) - 1} * (var(--zoom-width) * .46 + var(--zoom-gap))))`;
+        return <button type="button" className={`mockup-zoom-item ${offset === 0 ? 'mockup-zoom-main' : 'mockup-zoom-thumb'}`} style={{ transform: `translate(-50%,-50%) translateX(${distance}) scale(${offset === 0 ? 1 : .46})` }} onClick={() => offset === 0 ? close() : choose(index)} aria-label={offset === 0 ? 'Уменьшить' : `Увеличить: ${index + 1}`} key={item.id}><div className="mockup-zoom-content" data-zoom-device={index} style={{ aspectRatio: ratio }}>{item.content}</div></button>;
+      })}</div>
+      <div className="mockup-zoom-controls"><button type="button" className="mockup-zoom-close" onClick={close} aria-label="Закрыть"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg></button>{items.length > 1 && <div className="mockup-zoom-navigation"><button type="button" onClick={() => choose((selected - 1 + items.length) % items.length)} aria-label="Предыдущий">←</button><span>{selected + 1} / {items.length}</span><button type="button" onClick={() => choose((selected + 1) % items.length)} aria-label="Следующий">→</button></div>}</div>
     </Dialog.Popup></Dialog.Portal>
   </Dialog.Root>;
 }
