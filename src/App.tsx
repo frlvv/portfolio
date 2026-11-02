@@ -1,6 +1,6 @@
 import TaskCallout from './TaskCallout';
 import BuiltGrid from './BuiltGrid';
-import { motion, useMotionTemplate, useSpring } from 'motion/react';
+import CoverInteraction from './CoverInteraction';
 import GradientBackground from './GradientBackground';
 import CaseMedia from './CaseMedia';
 import { calloutTemplates } from './calloutTypes';
@@ -66,27 +66,11 @@ function PhoneMockup({ screen, className }: { screen: 'hub' | 'goal'; className:
 }
 
 function Cover() {
-  const [hovered, setHovered] = useState(false);
-  const x = useSpring(0, { mass: 1, stiffness: 100, damping: 20 });
-  const y = useSpring(0, { mass: 1, stiffness: 100, damping: 20 });
-  const depth = useSpring(0, { mass: 1, stiffness: 100, damping: 20 });
-  const transform = useMotionTemplate`perspective(1200px) translateZ(${depth}px) rotateX(${y}deg) rotateY(${x}deg)`;
-  const reset = () => { setHovered(false); x.set(0); y.set(0); depth.set(0); };
-  return <div className="cover-interaction" onPointerMove={event => {
-    if (event.pointerType !== 'mouse' || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
-    setHovered(true);
-    if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    x.set((event.clientX - rect.left - rect.width / 2) / rect.width * 3);
-    y.set(-(event.clientY - rect.top - rect.height / 2) / rect.height * 3);
-    depth.set(-4);
-  }} onPointerLeave={reset} onPointerCancel={reset} onClick={reset}>
-    <motion.div className="cover" style={{ transform }}>
-      <GradientBackground active={hovered} />
-      <PhoneMockup screen="hub" className="cover-phone cover-phone-first layered-phone" />
-      <PhoneMockup screen="goal" className="cover-phone cover-phone-second layered-phone" />
-    </motion.div>
-  </div>;
+  return <CoverInteraction>{active => <div className="cover">
+    <GradientBackground active={active} />
+    <PhoneMockup screen="hub" className="cover-phone cover-phone-first layered-phone" />
+    <PhoneMockup screen="goal" className="cover-phone cover-phone-second layered-phone" />
+  </div>}</CoverInteraction>;
 }
 
 function HeroCover() {
@@ -98,8 +82,7 @@ function HeroCover() {
 }
 
 function EditedCover({ value }: { value: MediaSpec }) {
-  const [active, setActive] = useState(false);
-  return <div className="cover-interaction" onPointerEnter={event => { if (event.pointerType === 'mouse') setActive(true); }} onPointerLeave={() => setActive(false)}><CaseMedia value={value} layout="cover" active={active} /></div>;
+  return <CoverInteraction>{active => <CaseMedia value={value} layout="cover" active={active} />}</CoverInteraction>;
 }
 
 type VisualKind = 'hub' | 'type' | 'plan' | 'goal' | 'change' | 'quick';
@@ -416,6 +399,6 @@ export default function App() {
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}CV_Vlad_Frolov_Product_Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <div className="work-column" id="work">{profileContent.showBuilds !== false && Boolean(profileContent.builds?.some(item => item.enabled !== false)) && <section className="built-section" aria-labelledby="built-heading"><h2 className="eyebrow" id="built-heading">{profileContent.builtTitle ?? 'Built'}</h2><BuiltGrid items={profileContent.builds?.filter(item => item.enabled !== false) ?? []} /></section>}<section className="projects" aria-labelledby="projects-heading"><h2 className="eyebrow" id="projects-heading">{profileContent.projectsTitle ?? 'Projects'}</h2><div className="project-list"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus">{cases.map(project => project.status === 'pending' ? <PendingProjectCard key={project.id} project={project} /> : <Dialog.Trigger key={project.id} className={`project-card${project.layout === 'savings' && !project.cover ? ' project-animated' : ''}`} aria-label={project.title} onClick={() => setSelectedCase(project)}>{project.coverMedia ? <EditedCover value={project.coverMedia} /> : project.cover ? <div className="cover case-static-cover"><img src={media(project.cover)} alt="" draggable="false" /></div> : project.layout === 'savings' ? <Cover /> : <div className="cover case-empty-cover" />}<span className="project-title">{project.title}</span></Dialog.Trigger>)}<Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport project={selectedCase} onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root></div></section></div>
+    <div className="work-column" id="work">{profileContent.showBuilds !== false && Boolean(profileContent.builds?.some(item => item.enabled !== false)) && <section className="built-section" aria-labelledby="built-heading"><h2 className="eyebrow" id="built-heading">{profileContent.builtTitle ?? 'Built'}</h2><BuiltGrid items={profileContent.builds?.filter(item => item.enabled !== false) ?? []} /></section>}<section className="projects" aria-labelledby="projects-heading"><h2 className="eyebrow" id="projects-heading">{profileContent.projectsTitle ?? 'Projects'}</h2><div className="project-list"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus">{cases.map(project => project.status === 'pending' ? <PendingProjectCard key={project.id} project={project} /> : <Dialog.Trigger key={project.id} className={`project-card${project.layout === 'savings' && !project.cover ? ' project-animated' : ''}`} aria-label={project.title} onClick={() => setSelectedCase(project)}>{project.coverMedia ? <EditedCover value={project.coverMedia} /> : project.cover ? <CoverInteraction>{() => <div className="cover case-static-cover"><img src={media(project.cover)} alt="" draggable="false" /></div>}</CoverInteraction> : project.layout === 'savings' ? <Cover /> : <div className="cover case-empty-cover" />}<span className="project-title">{project.title}</span></Dialog.Trigger>)}<Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport project={selectedCase} onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root></div></section></div>
   </main></>;
 }
