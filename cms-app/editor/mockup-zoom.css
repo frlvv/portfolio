@@ -2,6 +2,7 @@
 .case-edited-section>.mockup-zoom-source>.media-renderer{margin-top:24px}
 .mockup-zoom-backdrop{position:absolute;inset:0;z-index:-1;background:rgba(12,12,12,.84);pointer-events:none}
 .mockup-zoom-popup{position:fixed;inset:0;z-index:1001;isolation:isolate;display:flex;flex-direction:column;gap:32px;padding:max(28px,env(safe-area-inset-top)) max(28px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(28px,env(safe-area-inset-left));color:#fff;outline:none;overflow:hidden;cursor:zoom-out}
+.mockup-zoom-popup:not([data-zoom-ready]){visibility:hidden}
 .mockup-zoom-heading{display:flex;align-items:center;justify-content:center;flex-shrink:0;min-height:44px;padding-inline:48px;pointer-events:none}
 .mockup-zoom-title{width:fit-content;max-width:min(850px,100%);font-size:22px;line-height:27px;font-weight:400;letter-spacing:-.44px;text-align:center;margin:0;transform-origin:0 0}
 .mockup-zoom-stage{--zoom-width:min(54vw,calc((100dvh - 220px) * var(--zoom-ratio)));--zoom-gap:clamp(40px,6vw,96px);flex:1;min-height:0;position:relative;overflow:visible}

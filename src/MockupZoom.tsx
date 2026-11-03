@@ -38,12 +38,11 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
   const host = useRef<HTMLDivElement>(null);
   const popup = useRef<HTMLDivElement | null>(null);
   const origins = useRef<HTMLElement[]>([]);
-  const originBoxes = useRef<Box[]>([]);
   const heading = useRef<HTMLElement | null>(null);
-  const headingBox = useRef<Box | null>(null);
   const hidden = useRef(new Map<HTMLElement, string>());
   const animations = useRef<Animation[]>([]);
   const entered = useRef(false);
+  const opening = useRef(0);
   const closing = useRef(false);
   const restore = () => { hidden.current.forEach((opacity, element) => { element.style.opacity = opacity; }); hidden.current.clear(); };
   const hide = (element: HTMLElement) => { hidden.current.set(element, element.style.opacity); element.style.opacity = '0'; };
@@ -52,16 +51,14 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
     animations.current.push(animation);
     return animation;
   };
-  useEffect(() => () => { animations.current.forEach(animation => animation.cancel()); restore(); }, []);
+  useEffect(() => () => { opening.current++; animations.current.forEach(animation => animation.cancel()); restore(); }, []);
   const open = (index: number) => {
     if (!items[index]) return;
     animations.current.forEach(animation => animation.cancel()); animations.current = [];
     origins.current = Array.from(host.current?.querySelectorAll<HTMLElement>('.mockup-zoom-trigger,.media-renderer-phone') ?? []);
-    originBoxes.current = origins.current.map(element => element.getBoundingClientRect());
     const section = host.current?.closest('.solution-block,.case-section,.case-article,.draft-preview');
     heading.current = Array.from(section?.querySelectorAll<HTMLElement>('h1,h2,h3') ?? []).find(element => element.textContent?.trim() === title?.trim()) ?? null;
-    const box = heading.current ? textBox(heading.current) : null;
-    headingBox.current = box && box.top + box.height > 0 && box.top < window.innerHeight ? box : null;
+    opening.current++;
     entered.current = false; closing.current = false;
     setSelected(index); setOpen(true);
   };
@@ -69,10 +66,30 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
     popup.current = element;
     if (!element || entered.current) return;
     entered.current = true;
+    const attempt = opening.current;
+    const images = Array.from(element.querySelectorAll<HTMLImageElement>('[data-zoom-device] img'));
+    const decoded = images.map(image => {
+      image.loading = 'eager';
+      return image.decode();
+    });
+    const deadline = window.setTimeout(start, 160);
+    void Promise.allSettled(decoded).then(start);
+
+    function start() {
+      window.clearTimeout(deadline);
+      if (popup.current !== element || opening.current !== attempt || closing.current || element.dataset.zoomReady) return;
+      reveal(element);
+    }
+  };
+
+  const reveal = (element: HTMLDivElement) => {
+    const originBoxes = origins.current.map(device => device.getBoundingClientRect());
+    const box = heading.current ? textBox(heading.current) : null;
+    const headingBox = box && box.top + box.height > 0 && box.top < window.innerHeight ? box : null;
     element.querySelectorAll<HTMLElement>('[data-zoom-device]').forEach(content => {
       const index = Number(content.dataset.zoomDevice);
       const target = content.getBoundingClientRect();
-      const source = originBoxes.current[index];
+      const source = originBoxes[index];
       if (!source?.width || !target.width) return;
       const clip = sourceClip(origins.current[index], source);
       const animation = animate(content, [
@@ -89,7 +106,7 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
     const label = element.querySelector<HTMLElement>('.mockup-zoom-title');
     if (label) {
       const target = textBox(label);
-      const source = headingBox.current;
+      const source = headingBox;
       const animation = animate(label, source?.width && target.width
         ? [{ transform: inverse(source, target, 1, label.getBoundingClientRect()) }, { transform: 'translate(0px,0px) scale(1,1)' }]
         : [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0px)' }]);
@@ -99,14 +116,16 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
     if (shade) animate(shade, [{ opacity: 0 }, { opacity: 1 }]);
     origins.current.forEach(hide);
     host.current?.closest('.case-viewport')?.querySelectorAll<HTMLElement>('.case-close,.case-top').forEach(hide);
-    if (heading.current && headingBox.current) hide(heading.current);
+    if (heading.current && headingBox) hide(heading.current);
+    element.dataset.zoomReady = 'true';
+    element.focus({ preventScroll: true });
   };
 
   const close = () => {
     if (closing.current) return;
     closing.current = true;
     const element = popup.current;
-    if (!element || reduced()) { restore(); setOpen(false); return; }
+    if (!element?.dataset.zoomReady || reduced()) { restore(); setOpen(false); return; }
     const contents = Array.from(element.querySelectorAll<HTMLElement>('[data-zoom-device],.mockup-zoom-title'));
     const starts = contents.map(content => ({
       box: content.dataset.zoomDevice === undefined ? textBox(content) : content.getBoundingClientRect(),
@@ -150,7 +169,7 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
   };
   return <Dialog.Root modal="trap-focus" open={isOpen} onOpenChange={value => { if (!value) close(); }}>
     <div ref={host} className="mockup-zoom-source">{children(open)}</div>
-    <Dialog.Portal><Dialog.Popup ref={enter} className="mockup-zoom-popup" onPointerDown={event => event.stopPropagation()} onClick={event => { if (!(event.target as Element).closest('button')) close(); }} onKeyDown={event => {
+    <Dialog.Portal><Dialog.Popup ref={enter} initialFocus={false} className="mockup-zoom-popup" onPointerDown={event => event.stopPropagation()} onClick={event => { if (!(event.target as Element).closest('button')) close(); }} onKeyDown={event => {
       if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); event.stopPropagation(); choose((selected + (event.key === 'ArrowRight' ? 1 : -1) + items.length) % items.length); }
     }}>
       <div className="mockup-zoom-backdrop" aria-hidden="true" />
