@@ -4,6 +4,22 @@ html,body,#root{min-height:100%}
 html{background:#0c0c0c}
 body,#root{background:transparent}
 html{scroll-behavior:auto;scrollbar-gutter:stable}
+@media(hover:hover) and (pointer:fine){
+  @supports selector(::-webkit-scrollbar){
+    html::-webkit-scrollbar{width:12px}
+    html::-webkit-scrollbar-track{background:transparent}
+    html::-webkit-scrollbar-thumb{background:transparent;border:3px solid transparent;background-clip:padding-box;border-radius:999px}
+    html[data-scrollbar-visible]::-webkit-scrollbar-thumb,html::-webkit-scrollbar-thumb:hover,html::-webkit-scrollbar-thumb:active{background-color:#767676}
+  }
+  @supports not selector(::-webkit-scrollbar){
+    html{scrollbar-color:transparent transparent}
+    html[data-scrollbar-visible]{scrollbar-color:#767676 transparent}
+  }
+}
+@media(forced-colors:active){
+  html{scrollbar-color:auto!important}
+  html::-webkit-scrollbar-thumb{background-color:ButtonText!important}
+}
 body{margin:0;min-width:280px;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 button,a,input,[tabindex]{-webkit-tap-highlight-color:transparent;outline:none}
 button,a{touch-action:manipulation;-webkit-user-select:none;user-select:none}

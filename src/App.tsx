@@ -1,4 +1,5 @@
 import TaskCallout from './TaskCallout';
+import caseSlugs from '../content/case-slugs.json';
 import BuiltGrid from './BuiltGrid';
 import CoverInteraction from './CoverInteraction';
 import MockupZoom from './MockupZoom';
@@ -339,10 +340,47 @@ function CaseViewport({ onClose, project }: { onClose: () => void; project: Port
   </Dialog.Popup><button className={`case-top${showTop ? ' is-visible' : ''}`} onClick={scrollToTop} aria-label="Вверх">↑</button></div></Dialog.Viewport>;
 }
 
-const caseHash = (id: string) => `#case/${encodeURIComponent(id)}`;
+const homePath = import.meta.env.BASE_URL;
+const slugs: Readonly<Record<string, string>> = caseSlugs;
+const casePath = (id: string) => `${homePath}${encodeURIComponent(slugs[id] ?? id)}/`;
 
 function caseFromLocation() {
-  return cases.find(project => project.status === 'published' && caseHash(project.id) === location.hash);
+  const path = location.pathname.replace(/\/?$/, '/');
+  return cases.find(project => {
+    if (project.status !== 'published') return false;
+    const id = encodeURIComponent(project.id);
+    return path === casePath(project.id) ||
+      (path === homePath && (location.hash === `#case/${id}` || location.hash === `#${id}`));
+  });
+}
+
+function useScrollbarHover() {
+  useEffect(() => {
+    const preference = matchMedia('(hover: hover) and (pointer: fine)');
+    const root = document.documentElement;
+    const hide = () => root.removeAttribute('data-scrollbar-visible');
+    const onMove = (event: PointerEvent) => {
+      if (!preference.matches || event.pointerType === 'touch') return;
+      const nearEdge = event.clientX >= window.innerWidth - 28;
+      if (nearEdge !== root.hasAttribute('data-scrollbar-visible')) {
+        root.toggleAttribute('data-scrollbar-visible', nearEdge);
+      }
+    };
+    const onLeave = (event: PointerEvent) => {
+      if (event.clientX < window.innerWidth - 28 || event.clientY <= 0 || event.clientY >= window.innerHeight) hide();
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    root.addEventListener('pointerleave', onLeave, { passive: true });
+    window.addEventListener('blur', hide);
+    preference.addEventListener('change', hide);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      root.removeEventListener('pointerleave', onLeave);
+      window.removeEventListener('blur', hide);
+      preference.removeEventListener('change', hide);
+      hide();
+    };
+  }, []);
 }
 
 export default function App() {
@@ -353,6 +391,7 @@ export default function App() {
   const previousRestoration = useRef<ScrollRestoration | null>(null);
   const returning = useRef(false);
   useSmoothScroll(contactOpen || caseOpen);
+  useScrollbarHover();
   useEffect(() => {
     for (const file of ['case-bg.png', 'hero-hub.png', 'hero-goal.png']) {
       const image = new Image();
@@ -410,6 +449,10 @@ export default function App() {
       if (project) {
         previousRestoration.current ??= history.scrollRestoration;
         history.scrollRestoration = 'manual';
+        const path = casePath(project.id);
+        if (location.pathname !== path || location.hash) {
+          history.replaceState(history.state, '', path + location.search);
+        }
         const saved = history.state?.portfolioHomeScroll;
         showCase(project, typeof saved === 'number' ? saved : window.scrollY);
       } else {
@@ -429,7 +472,7 @@ export default function App() {
     if (activeCase.current === project.id || returning.current) return;
     const homeScroll = document.documentElement.dataset.caseOpen ? pageScroll.current : window.scrollY;
     keepScrollManual();
-    history.pushState({ portfolioCase: project.id, portfolioHomeScroll: homeScroll }, '', caseHash(project.id));
+    history.pushState({ portfolioCase: project.id, portfolioHomeScroll: homeScroll }, '', casePath(project.id) + location.search);
     showCase(project, homeScroll);
   };
 
@@ -440,7 +483,7 @@ export default function App() {
       history.back();
       return;
     }
-    if (caseFromLocation()) history.replaceState(history.state, '', location.pathname + location.search);
+    if (caseFromLocation()) history.replaceState(null, '', homePath + location.search);
     hideCase();
   };
 
