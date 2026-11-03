@@ -3,7 +3,7 @@
 html,body,#root{min-height:100%}
 html{background:#0c0c0c}
 body,#root{background:transparent}
-html{scroll-behavior:auto}
+html{scroll-behavior:auto;scrollbar-gutter:stable}
 body{margin:0;min-width:280px;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 button,a,input,[tabindex]{-webkit-tap-highlight-color:transparent;outline:none}
 button,a{touch-action:manipulation;-webkit-user-select:none;user-select:none}
@@ -63,8 +63,12 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
 .copy-error a{text-decoration:underline}
 .case-backdrop{position:fixed;inset:0;z-index:10;background:rgba(12,12,12,.68);transition:opacity 140ms ease}
 .case-backdrop[data-starting-style],.case-backdrop[data-ending-style]{opacity:0}
-.case-viewport{position:fixed;z-index:11;inset:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#444 transparent;background:transparent}
-@media(min-width:701px){html[data-case-open=true],html[data-case-open=true] body{overflow:hidden}}
+.case-viewport{position:relative;z-index:11;min-height:100dvh;background:transparent}
+html[data-case-open=true]{overflow-anchor:none}
+@media(min-width:701px){
+  html[data-case-open=true] #root{position:fixed;inset-inline:0;top:calc(-1 * var(--page-scroll,0px));height:calc(100dvh + var(--page-scroll,0px));min-height:0;overflow:clip}
+}
+html[data-case-closing=true] .case-top{visibility:hidden}
 .case-scroll-content{width:100%;min-height:100%;padding:37px 24px;pointer-events:none}
 .case-popup{position:relative;max-width:1020px;min-width:0;margin:0 auto;background:#121212;border-radius:32px;padding:35px 33px 72px;pointer-events:auto;transform:translateY(var(--drag-y,0));transition:opacity 140ms ease,transform 180ms var(--ease-out)}
 .case-popup.is-dragging{transition:none}
@@ -172,9 +176,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:none;box-s
   :root{background-color:transparent;background-image:linear-gradient(#0c0c0c,#0c0c0c)}
   body{padding:0}
   html[data-case-open=true] #root{position:absolute;left:0;right:0;top:calc(var(--case-scroll,0px) - var(--page-scroll,0px));height:calc(100lvh + var(--page-scroll,0px));min-height:0;overflow:clip;width:100%}
-  html[data-case-open=true]{overflow-anchor:none}
   html[data-case-closing=true] #root{height:auto;overflow:visible}
-  html[data-case-closing=true] .case-top{visibility:hidden}
   .portfolio-layout[data-case-open=true]{opacity:1}
   .portfolio-layout{display:flex;flex-direction:column;gap:40px;margin:calc(28px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left))}
   .profile{position:static;width:100%;gap:28px}.profile-block:nth-of-type(4){max-width:300px}.profile-actions{max-width:360px;width:100%}

@@ -17,19 +17,19 @@ import { cases, media, profileContent, projectUpdated, solutionCallouts, type Po
 const asset = (name: string) => `${import.meta.env.BASE_URL}assets/${name}`;
 const imageDimensions: Record<string, { width: number; height: number }> = {"hero-hub.png": {"width": 2144, "height": 2144}, "type-goal.png": {"width": 2144, "height": 2144}, "amount.png": {"width": 2144, "height": 2144}, "plan.png": {"width": 2144, "height": 2144}, "no-plan.png": {"width": 2144, "height": 2144}, "screen-goal.png": {"width": 2144, "height": 2144}, "plan-overview.png": {"width": 2144, "height": 2144}, "plan-adjust.png": {"width": 2144, "height": 2144}, "quick-amount.png": {"width": 2144, "height": 2144}, "quick-plan.png": {"width": 2144, "height": 2144}, "quick-hold.png": {"width": 2144, "height": 2144}, "current-home.png": {"width": 828, "height": 1792}, "current-account.png": {"width": 828, "height": 1792}};
 
-function useSmoothScroll(blocked = false, wrapper?: React.RefObject<HTMLDivElement | null>, content?: React.RefObject<HTMLDivElement | null>) {
+function useSmoothScroll(blocked = false) {
   useEffect(() => {
     const preference = matchMedia('(prefers-reduced-motion: reduce)');
     let lenis: Lenis | undefined;
     const setup = () => {
       lenis?.destroy();
-      if (preference.matches || blocked || (wrapper && !wrapper.current) || matchMedia('(max-width:700px)').matches) return;
-      lenis = new Lenis({ wrapper: wrapper?.current ?? window, content: content?.current ?? document.documentElement, autoRaf: true, smoothWheel: true, syncTouch: false, lerp: 0.2, overscroll: false });
+      if (preference.matches || blocked || matchMedia('(max-width:700px)').matches) return;
+      lenis = new Lenis({ autoRaf: true, smoothWheel: true, syncTouch: false, lerp: 0.2, overscroll: false });
     };
     setup();
     preference.addEventListener('change', setup);
     return () => { lenis?.destroy(); preference.removeEventListener('change', setup); };
-  }, [blocked, wrapper, content]);
+  }, [blocked]);
 }
 
 function Icon({ name, size = 16 }: { name: string; size?: number }) {
@@ -232,20 +232,14 @@ function CaseContent({ project }: { project: PortfolioCase }) {
 type SheetDrag = { source: 'touch' | 'pointer'; id: number; x: number; y: number; lastY: number; lastTime: number; velocity: number; committed: boolean };
 
 function CaseViewport({ onClose, project }: { onClose: () => void; project: PortfolioCase }) {
-  const wrapper = useRef<HTMLDivElement>(null), content = useRef<HTMLDivElement>(null), popup = useRef<HTMLDivElement>(null);
+  const popup = useRef<HTMLDivElement>(null);
   const drag = useRef<SheetDrag | null>(null);
   const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [showTop, setShowTop] = useState(false);
-  useSmoothScroll(false, wrapper, content);
-  useLayoutEffect(() => {
-    if (wrapper.current) wrapper.current.scrollTop = 0;
-    setShowTop(false);
-  }, []);
   useEffect(() => {
-    const onWindowScroll = () => {
-      if (matchMedia('(max-width:700px)').matches) setShowTop(window.scrollY > 480);
-    };
-    window.addEventListener('scroll', onWindowScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onWindowScroll);
+    const onScroll = () => setShowTop(window.scrollY > 480);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
   const release = useCallback((clientY: number, cancelled = false) => {
     const gesture = drag.current;
@@ -267,7 +261,7 @@ function CaseViewport({ onClose, project }: { onClose: () => void; project: Port
     if (!element) return;
     const touchStart = (event: TouchEvent) => {
       if ((event.target as HTMLElement).closest('button,a') || event.touches.length !== 1) return;
-      const scrollTop = matchMedia('(max-width:700px)').matches ? window.scrollY : (wrapper.current?.scrollTop ?? 0);
+      const scrollTop = window.scrollY;
       if (scrollTop > 1) return;
       const touch = event.touches[0];
       drag.current = { source: 'touch', id: touch.identifier, x: touch.clientX, y: touch.clientY, lastY: touch.clientY, lastTime: event.timeStamp, velocity: 0, committed: false };
@@ -315,25 +309,13 @@ function CaseViewport({ onClose, project }: { onClose: () => void; project: Port
     };
   }, [release]);
   function scrollToTop() {
-    const mobile = matchMedia('(max-width:700px)').matches;
-    const element = wrapper.current;
-    if (!mobile && !element) return;
-    const getTop = () => mobile ? window.scrollY : element!.scrollTop;
-    const setTop = (value: number) => { if (mobile) window.scrollTo(0, value); else element!.scrollTop = value; };
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setTop(0); return; }
-    const start = getTop(), startedAt = performance.now(), duration = 420;
-    const step = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / duration);
-      setTop(start * Math.pow(1 - progress, 4));
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
+    window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
   }
   const popupStyle = { '--drag-y': `${dragY}px` } as CSSProperties;
-  return <Dialog.Viewport className="case-viewport" ref={wrapper} onScroll={event => setShowTop(event.currentTarget.scrollTop > 480)}><div className="case-scroll-content" ref={content}><Dialog.Popup ref={popup} className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle} data-displaced={dragY > 0 || undefined} onPointerDown={event => {
+  return <Dialog.Viewport className="case-viewport"><div className="case-scroll-content"><Dialog.Popup ref={popup} className={`case-popup${dragging ? ' is-dragging' : ''}`} style={popupStyle} data-displaced={dragY > 0 || undefined} onPointerDown={event => {
       if (event.pointerType === 'touch') return;
       if ((event.target as HTMLElement).closest('button,a')) return;
-      const scrollTop = matchMedia('(max-width:700px)').matches ? window.scrollY : (wrapper.current?.scrollTop ?? 0);
+      const scrollTop = window.scrollY;
       if (scrollTop > 2) return;
       drag.current = { source: 'pointer', id: event.pointerId, x: event.clientX, y: event.clientY, lastY: event.clientY, lastTime: event.timeStamp, velocity: 0, committed: false };
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -357,10 +339,19 @@ function CaseViewport({ onClose, project }: { onClose: () => void; project: Port
   </Dialog.Popup><button className={`case-top${showTop ? ' is-visible' : ''}`} onClick={scrollToTop} aria-label="Вверх">↑</button></div></Dialog.Viewport>;
 }
 
+const caseHash = (id: string) => `#case/${encodeURIComponent(id)}`;
+
+function caseFromLocation() {
+  return cases.find(project => project.status === 'published' && caseHash(project.id) === location.hash);
+}
+
 export default function App() {
   const [contactOpen, setContactOpen] = useState(false), [caseOpen, setCaseOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<PortfolioCase>(cases.find(project => project.status === 'published') ?? cases[0]);
+  const activeCase = useRef<string | null>(null);
   const pageScroll = useRef(0);
+  const previousRestoration = useRef<ScrollRestoration | null>(null);
+  const returning = useRef(false);
   useSmoothScroll(contactOpen || caseOpen);
   useEffect(() => {
     for (const file of ['case-bg.png', 'hero-hub.png', 'hero-goal.png']) {
@@ -369,40 +360,109 @@ export default function App() {
       image.decode?.().catch(() => undefined);
     }
   }, []);
-  const changeCaseOpen = (open: boolean) => {
+
+  const keepScrollManual = () => {
+    previousRestoration.current ??= history.scrollRestoration;
+    history.scrollRestoration = 'manual';
+  };
+
+  const showCase = useCallback((project: PortfolioCase, homeScroll = window.scrollY) => {
+    if (activeCase.current === project.id) return;
     const root = document.documentElement;
-    if (!open && root.dataset.caseOpen && matchMedia('(max-width:700px)').matches) {
+    if (!root.dataset.caseOpen) {
+      pageScroll.current = homeScroll;
+      root.style.setProperty('--page-scroll', `${homeScroll}px`);
+      root.dataset.caseOpen = 'true';
+    }
+    if (root.dataset.caseClosing) {
+      delete root.dataset.caseClosing;
+      root.style.removeProperty('--case-scroll');
       const viewport = document.querySelector<HTMLElement>('.case-viewport');
-      root.style.setProperty('--case-scroll', `${window.scrollY}px`);
-      root.dataset.caseClosing = 'true';
+      viewport?.style.removeProperty('height');
+      viewport?.style.removeProperty('overflow');
+    }
+    activeCase.current = project.id;
+    setSelectedCase(project);
+    setCaseOpen(true);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  const hideCase = useCallback(() => {
+    if (!activeCase.current) return;
+    activeCase.current = null;
+    const root = document.documentElement;
+    root.style.setProperty('--case-scroll', `${window.scrollY}px`);
+    root.dataset.caseClosing = 'true';
+    if (matchMedia('(max-width:700px)').matches) {
+      const viewport = document.querySelector<HTMLElement>('.case-viewport');
       if (viewport) {
         viewport.style.height = `${viewport.offsetHeight}px`;
         viewport.style.overflow = 'clip';
       }
     }
-    if (open && !root.dataset.caseOpen) {
-      pageScroll.current = window.scrollY;
-      root.style.setProperty('--page-scroll', `${pageScroll.current}px`);
-      root.dataset.caseOpen = 'true';
-      if (matchMedia('(max-width:700px)').matches) window.scrollTo({ top: 0, behavior: 'instant' });
-    }
-    setCaseOpen(open);
+    setCaseOpen(false);
+  }, []);
+
+  useLayoutEffect(() => {
+    const syncRoute = () => {
+      returning.current = false;
+      const project = caseFromLocation();
+      if (project) {
+        previousRestoration.current ??= history.scrollRestoration;
+        history.scrollRestoration = 'manual';
+        const saved = history.state?.portfolioHomeScroll;
+        showCase(project, typeof saved === 'number' ? saved : window.scrollY);
+      } else {
+        hideCase();
+      }
+    };
+    syncRoute();
+    window.addEventListener('popstate', syncRoute);
+    window.addEventListener('hashchange', syncRoute);
+    return () => {
+      window.removeEventListener('popstate', syncRoute);
+      window.removeEventListener('hashchange', syncRoute);
+    };
+  }, [showCase, hideCase]);
+
+  const openCase = (project: PortfolioCase) => {
+    if (activeCase.current === project.id || returning.current) return;
+    const homeScroll = document.documentElement.dataset.caseOpen ? pageScroll.current : window.scrollY;
+    keepScrollManual();
+    history.pushState({ portfolioCase: project.id, portfolioHomeScroll: homeScroll }, '', caseHash(project.id));
+    showCase(project, homeScroll);
   };
+
+  const closeCase = () => {
+    if (!activeCase.current || returning.current) return;
+    if (history.state?.portfolioCase === activeCase.current && caseFromLocation()) {
+      returning.current = true;
+      history.back();
+      return;
+    }
+    if (caseFromLocation()) history.replaceState(history.state, '', location.pathname + location.search);
+    hideCase();
+  };
+
   const completeCaseChange = (open: boolean) => {
-    if (open) return;
+    if (open || activeCase.current) return;
     const root = document.documentElement;
     if (!root.dataset.caseOpen) return;
     delete root.dataset.caseOpen;
     delete root.dataset.caseClosing;
     root.style.removeProperty('--page-scroll');
     root.style.removeProperty('--case-scroll');
-    if (matchMedia('(max-width:700px)').matches) window.scrollTo({ top: pageScroll.current, behavior: 'instant' });
+    window.scrollTo({ top: pageScroll.current, behavior: 'instant' });
+    if (previousRestoration.current) {
+      history.scrollRestoration = previousRestoration.current;
+      previousRestoration.current = null;
+    }
   };
   return <><main className="portfolio-layout" data-case-open={caseOpen}>
     <aside className="profile"><Portrait blocked={caseOpen || contactOpen} source={profileContent.portrait} /><div className="profile-block"><p className="eyebrow">{profileContent.name}</p><h1>{profileContent.role}</h1></div>{profileContent.sections.map((section, index) => <div className="profile-block" key={index}><p className="eyebrow">{section.label}</p><p className="profile-section-text">{section.text}</p></div>)}<div className="profile-actions">
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
       <a className="cv-button" href={`${import.meta.env.BASE_URL}CV_Vlad_Frolov_Product_Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
-    <div className="work-column" id="work">{profileContent.showBuilds !== false && Boolean(profileContent.builds?.some(item => item.enabled !== false)) && <section className="built-section" aria-labelledby="built-heading"><h2 className="eyebrow" id="built-heading">{profileContent.builtTitle ?? 'Built'}</h2><BuiltGrid items={profileContent.builds?.filter(item => item.enabled !== false) ?? []} /></section>}<section className="projects" aria-labelledby="projects-heading"><h2 className="eyebrow" id="projects-heading">{profileContent.projectsTitle ?? 'Projects'}</h2><div className="project-list"><Dialog.Root open={caseOpen} onOpenChange={changeCaseOpen} onOpenChangeComplete={completeCaseChange} modal="trap-focus">{cases.map(project => project.status === 'pending' ? <PendingProjectCard key={project.id} project={project} /> : <Dialog.Trigger key={project.id} className={`project-card${project.layout === 'savings' && !project.cover ? ' project-animated' : ''}`} aria-label={project.title} onClick={() => setSelectedCase(project)}>{project.coverMedia ? <EditedCover value={project.coverMedia} /> : project.cover ? <CoverInteraction>{() => <div className="cover case-static-cover"><img src={media(project.cover)} alt="" draggable="false" /></div>}</CoverInteraction> : project.layout === 'savings' ? <Cover /> : <div className="cover case-empty-cover" />}<span className="project-title">{project.title}</span></Dialog.Trigger>)}<Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport project={selectedCase} onClose={() => changeCaseOpen(false)} /></Dialog.Portal></Dialog.Root></div></section></div>
+    <div className="work-column" id="work">{profileContent.showBuilds !== false && Boolean(profileContent.builds?.some(item => item.enabled !== false)) && <section className="built-section" aria-labelledby="built-heading"><h2 className="eyebrow" id="built-heading">{profileContent.builtTitle ?? 'Built'}</h2><BuiltGrid items={profileContent.builds?.filter(item => item.enabled !== false) ?? []} /></section>}<section className="projects" aria-labelledby="projects-heading"><h2 className="eyebrow" id="projects-heading">{profileContent.projectsTitle ?? 'Projects'}</h2><div className="project-list"><Dialog.Root open={caseOpen} onOpenChange={open => { if (!open) closeCase(); }} onOpenChangeComplete={completeCaseChange} modal="trap-focus">{cases.map(project => project.status === 'pending' ? <PendingProjectCard key={project.id} project={project} /> : <Dialog.Trigger key={project.id} className={`project-card${project.layout === 'savings' && !project.cover ? ' project-animated' : ''}`} aria-label={project.title} onClick={() => openCase(project)}>{project.coverMedia ? <EditedCover value={project.coverMedia} /> : project.cover ? <CoverInteraction>{() => <div className="cover case-static-cover"><img src={media(project.cover)} alt="" draggable="false" /></div>}</CoverInteraction> : project.layout === 'savings' ? <Cover /> : <div className="cover case-empty-cover" />}<span className="project-title">{project.title}</span></Dialog.Trigger>)}<Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport key={selectedCase.id} project={selectedCase} onClose={closeCase} /></Dialog.Portal></Dialog.Root></div></section></div>
   </main></>;
 }
