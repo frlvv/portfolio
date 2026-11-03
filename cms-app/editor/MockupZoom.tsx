@@ -77,7 +77,7 @@ export default function MockupZoom({ title = 'Мокапы', ratio, items, child
 
     function start() {
       window.clearTimeout(deadline);
-      if (popup.current !== element || opening.current !== attempt || closing.current || element.dataset.zoomReady) return;
+      if (!element || popup.current !== element || opening.current !== attempt || closing.current || element.dataset.zoomReady) return;
       reveal(element);
     }
   };
