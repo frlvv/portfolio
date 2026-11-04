@@ -1,4 +1,5 @@
 import TaskCallout from './TaskCallout';
+import { trackGoal, trackPage } from './analytics';
 import caseSlugs from '../content/case-slugs.json';
 import BuiltGrid from './BuiltGrid';
 import CoverInteraction from './CoverInteraction';
@@ -114,6 +115,7 @@ function ContactContent() {
   async function copyEmail() {
     try {
       await navigator.clipboard.writeText('v@frlvv.ru');
+      trackGoal('email_copy');
       setError(false); setCopied(true); clearTimeout(timer.current);
       timer.current = setTimeout(() => setCopied(false), 2400);
     } catch { setError(true); }
@@ -123,7 +125,7 @@ function ContactContent() {
     <Dialog.Description className="sr-only">Контакты</Dialog.Description>
     <div className="contact-links">
       <button className={`contact-row${copied ? ' is-copied' : ''}`} onClick={copyEmail} onMouseEnter={() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) setHovered('email'); }} onMouseLeave={() => setHovered(null)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setHovered('email'); }} onBlur={() => setHovered(null)} aria-label="Email"><Icon name="email" size={20} /><span className="contact-label"><span>Email</span><span>v@frlvv.ru</span></span><span className="contact-action" aria-live="polite"><BlurText text="copy" visible={!copied && hovered === 'email'} /><BlurText text="🎉 copied" visible={copied} /></span></button>
-      <a className="contact-row" href="https://t.me/vf433" target="_blank" rel="noreferrer" onMouseEnter={() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) setHovered('telegram'); }} onMouseLeave={() => setHovered(null)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setHovered('telegram'); }} onBlur={() => setHovered(null)} aria-label="Telegram"><Icon name="telegram" size={20} /><span className="contact-label"><span>Telegram</span><span>vf433</span></span><span className="contact-action"><BlurText text="go" visible={hovered === 'telegram'} /></span></a>
+      <a className="contact-row" onClick={() => trackGoal('telegram_open')} href="https://t.me/vf433" target="_blank" rel="noreferrer" onMouseEnter={() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) setHovered('telegram'); }} onMouseLeave={() => setHovered(null)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setHovered('telegram'); }} onBlur={() => setHovered(null)} aria-label="Telegram"><Icon name="telegram" size={20} /><span className="contact-label"><span>Telegram</span><span>vf433</span></span><span className="contact-action"><BlurText text="go" visible={hovered === 'telegram'} /></span></a>
     </div>
     {error && <p className="copy-error" role="status">Не удалось скопировать. <a href="mailto:v@frlvv.ru">v@frlvv.ru</a></p>}
   </>;
@@ -237,11 +239,19 @@ function CaseViewport({ onClose, project }: { onClose: () => void; project: Port
   const drag = useRef<SheetDrag | null>(null);
   const [dragY, setDragY] = useState(0), [dragging, setDragging] = useState(false), [showTop, setShowTop] = useState(false);
   useEffect(() => {
-    const onScroll = () => setShowTop(window.scrollY > 480);
+    let reported = false;
+    const onScroll = () => {
+      setShowTop(window.scrollY > 480);
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      if (!reported && scrollable > 0 && window.scrollY / scrollable >= .75) {
+        reported = true;
+        trackGoal('case_read_75', { case_id: project.id });
+      }
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [project.id]);
   const release = useCallback((clientY: number, cancelled = false) => {
     const gesture = drag.current;
     if (!gesture) return;
@@ -393,6 +403,12 @@ export default function App() {
   useSmoothScroll(contactOpen || caseOpen);
   useScrollbarHover();
   useEffect(() => {
+    const project = caseFromLocation();
+    if (trackPage(project?.heading || document.title) && project) {
+      trackGoal('case_view', { case_id: project.id });
+    }
+  }, [caseOpen, selectedCase.id]);
+  useEffect(() => {
     for (const file of ['case-bg.png', 'hero-hub.png', 'hero-goal.png']) {
       const image = new Image();
       image.src = asset(file);
@@ -504,7 +520,7 @@ export default function App() {
   return <><main className="portfolio-layout" data-case-open={caseOpen}>
     <aside className="profile"><Portrait blocked={caseOpen || contactOpen} source={profileContent.portrait} /><div className="profile-block"><p className="eyebrow">{profileContent.name}</p><h1>{profileContent.role}</h1></div>{profileContent.sections.map((section, index) => <div className="profile-block" key={index}><p className="eyebrow">{section.label}</p><p className="profile-section-text">{section.text}</p></div>)}<div className="profile-actions">
       <Dialog.Root open={contactOpen} onOpenChange={setContactOpen}><Dialog.Trigger className="contact-button">Contact</Dialog.Trigger><Dialog.Portal><Dialog.Backdrop className="contact-backdrop" /><Dialog.Popup className="contact-popup"><ContactContent /></Dialog.Popup></Dialog.Portal></Dialog.Root>
-      <a className="cv-button" href={`${import.meta.env.BASE_URL}CV_Vlad_Frolov_Product_Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
+      <a className="cv-button" onClick={() => trackGoal('cv_open')} href={`${import.meta.env.BASE_URL}CV_Vlad_Frolov_Product_Designer.pdf`} target="_blank" rel="noreferrer">CV</a>
     </div></aside>
     <div className="work-column" id="work">{profileContent.showBuilds !== false && Boolean(profileContent.builds?.some(item => item.enabled !== false)) && <section className="built-section" aria-labelledby="built-heading"><h2 className="eyebrow" id="built-heading">{profileContent.builtTitle ?? 'Built'}</h2><BuiltGrid items={profileContent.builds?.filter(item => item.enabled !== false) ?? []} /></section>}<section className="projects" aria-labelledby="projects-heading"><h2 className="eyebrow" id="projects-heading">{profileContent.projectsTitle ?? 'Projects'}</h2><div className="project-list"><Dialog.Root open={caseOpen} onOpenChange={open => { if (!open) closeCase(); }} onOpenChangeComplete={completeCaseChange} modal="trap-focus">{cases.map(project => project.status === 'pending' ? <PendingProjectCard key={project.id} project={project} /> : <Dialog.Trigger key={project.id} className={`project-card${project.layout === 'savings' && !project.cover ? ' project-animated' : ''}`} aria-label={project.title} onClick={() => openCase(project)}>{project.coverMedia ? <EditedCover value={project.coverMedia} /> : project.cover ? <CoverInteraction>{() => <div className="cover case-static-cover"><img src={media(project.cover)} alt="" draggable="false" /></div>}</CoverInteraction> : project.layout === 'savings' ? <Cover /> : <div className="cover case-empty-cover" />}<span className="project-title">{project.title}</span></Dialog.Trigger>)}<Dialog.Portal><Dialog.Backdrop className="case-backdrop" /><CaseViewport key={selectedCase.id} project={selectedCase} onClose={closeCase} /></Dialog.Portal></Dialog.Root></div></section></div>
   </main></>;
